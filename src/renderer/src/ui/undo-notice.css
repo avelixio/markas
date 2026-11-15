@@ -1,0 +1,45 @@
+.mk-undo {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  max-width: min(520px, calc(100vw - 32px));
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  transform: translateX(-50%);
+  border: 1px solid var(--mk-border-strong);
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-bg-overlay);
+  color: var(--mk-text-primary);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 28%);
+}
+
+.mk-undo__message {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mk-undo__message strong {
+  font: 500 13px / 18px var(--mk-font-ui);
+}
+
+.mk-undo__message small {
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mk-undo__message .mk-undo__problem {
+  color: var(--mk-danger-base);
+}
+
+.mk-undo__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}

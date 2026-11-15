@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Markas</title>
+  <rect x="32" y="32" width="960" height="960" rx="232" fill="#5FD9B0"/>
+  <path fill="none" stroke="#0B1F18" stroke-width="104" stroke-linecap="round" stroke-linejoin="round" d="M292 744V436L512 616L732 436V744"/>
+  <circle cx="512" cy="318" r="70" fill="#0B1F18"/>
+</svg>

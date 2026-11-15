@@ -1,0 +1,90 @@
+@import "../ui/primitives.css";
+@import "../keyring/keyring.css";
+
+.mk-rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.mk-room {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--mk-border-subtle);
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-bg-surface);
+}
+
+.mk-room > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.mk-room > header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.mk-room h2 {
+  margin: 0;
+  font: 600 14px / 20px var(--mk-font-ui);
+}
+
+.mk-room > header p {
+  margin: 2px 0 0;
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.mk-room__mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--mk-accent-soft);
+  color: var(--mk-accent-text);
+}
+
+.mk-room__members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-room__members li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 13px;
+}
+
+.mk-room__members strong {
+  font-weight: 600;
+}
+
+.mk-room__members small {
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+}
+
+.mk-room__ask {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.mk-room__ask textarea {
+  min-width: 0;
+  flex: 1;
+  resize: vertical;
+}

@@ -1,0 +1,124 @@
+@import "../ui/primitives.css";
+
+.mk-files {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  color: var(--mk-text-primary);
+  font: 12px / 16px var(--mk-font-ui);
+}
+
+.mk-files__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 12px;
+  padding: 0 10px;
+  border: 1px solid var(--mk-border-subtle);
+  border-radius: var(--mk-radius-control);
+  color: var(--mk-text-tertiary);
+}
+
+.mk-files__search input {
+  min-width: 0;
+  flex: 1;
+  height: 28px;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--mk-text-primary);
+  font: inherit;
+}
+
+.mk-files__search:focus-within {
+  border-color: var(--mk-accent-base);
+}
+
+.mk-files > .mk-form-error {
+  margin: 0 12px 8px;
+}
+
+.mk-files__body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mk-files h3 {
+  margin: 10px 12px 4px;
+  color: var(--mk-text-tertiary);
+  font: 600 11px / 14px var(--mk-font-ui);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.mk-files ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mk-files__row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 0;
+  background: none;
+  color: var(--mk-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mk-files__row:hover {
+  background: var(--mk-bg-surface);
+}
+
+.mk-files__row:focus-visible {
+  outline: 2px solid var(--mk-accent-base);
+  outline-offset: -2px;
+}
+
+.mk-files__row svg {
+  flex: 0 0 auto;
+  color: var(--mk-text-tertiary);
+}
+
+.mk-files__row span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mk-files__row small {
+  flex: 0 0 auto;
+  color: var(--mk-text-tertiary);
+  font-size: 11px;
+}
+
+.mk-files__note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 5px 12px;
+  color: var(--mk-text-tertiary);
+}
+
+.mk-files__foot {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  border-top: 1px solid var(--mk-border-subtle);
+  color: var(--mk-text-tertiary);
+  font-size: 11px;
+  line-height: 15px;
+}

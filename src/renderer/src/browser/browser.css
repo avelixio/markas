@@ -1,0 +1,124 @@
+@import "../ui/primitives.css";
+
+.mk-handoff {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 14px;
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-warn-soft);
+  color: var(--mk-text-primary);
+  font: 13px / 19px var(--mk-font-ui);
+}
+
+.mk-handoff__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mk-warn-base);
+}
+
+.mk-handoff__head strong {
+  flex: 1;
+  min-width: 0;
+  color: var(--mk-text-primary);
+  font-weight: 600;
+}
+
+.mk-handoff__since {
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.mk-handoff p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mk-handoff__problem {
+  color: var(--mk-danger-base);
+}
+
+.mk-handoff__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mk-preview {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.mk-preview__page {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  place-items: start center;
+  overflow: auto;
+  background: var(--mk-bg-app);
+}
+
+.mk-preview__page img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mk-preview__page.is-dim img {
+  opacity: 0.45;
+}
+
+.mk-preview__note {
+  display: grid;
+  align-self: center;
+  justify-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 16px;
+  color: var(--mk-text-secondary);
+  font: 12px / 17px var(--mk-font-ui);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.mk-preview__note strong {
+  color: var(--mk-text-primary);
+  font-size: 13px;
+}
+
+.mk-preview__status {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--mk-border-subtle);
+  background: var(--mk-bg-surface);
+  font: 12px / 16px var(--mk-font-ui);
+}
+
+.mk-preview__status > span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mk-preview__status strong {
+  color: var(--mk-text-primary);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.mk-preview__status small {
+  overflow: hidden;
+  color: var(--mk-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

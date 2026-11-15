@@ -1,0 +1,121 @@
+/** English text for the first-run setup. Spread into the main table in en.ts. */
+export const enSetup = {
+  "setup.step": "Step {current} of {total}",
+  "setup.back": "Back",
+  "setup.continue": "Continue",
+  "setup.saving": "Saving",
+  "setup.saveFailed":
+    "Markas could not save this step. Check that the host is running, then try again.",
+
+  "setup.language.label": "Choose your language",
+  "setup.language.title": "Choose your language",
+  "setup.language.body": "Pilih bahasa Anda. You can change it later in Settings.",
+  "setup.language.en.body": "Menus, buttons and messages in English.",
+  "setup.language.id.body": "Menu, tombol dan pesan dalam Bahasa Indonesia.",
+  "setup.language.note":
+    "Your bots answer in whatever language you write to them. This only sets the language of Markas itself.",
+  "setup.language.unsupported.title": "Your computer's language is not one Markas has yet",
+  "setup.language.unsupported.body":
+    "Markas starts in English. Pick Bahasa Indonesia here or later in Settings.",
+
+  "setup.engines.label": "Connect your engines",
+  "setup.engines.title": "Connect the engines your bots will run on",
+  "setup.engines.body":
+    "Markas drives the command-line tools you already have, on your own sign-in. It never asks for or stores their passwords.",
+  "setup.engines.checkAgain": "Check again",
+  "setup.engines.checking": "Checking",
+  "setup.engines.version": "Version {version}",
+  "setup.engines.ready": "Signed in",
+  "setup.engines.notInstalled": "Not installed",
+  "setup.engines.notSignedIn": "Not signed in",
+  "setup.engines.installing": "Installing",
+  "setup.engines.waiting": "Waiting for you to sign in",
+  "setup.engines.outdated": "Needs an update",
+  "setup.engines.problem": "Needs attention",
+  "setup.engines.install": "Install",
+  "setup.engines.update": "Update",
+  "setup.engines.signIn": "Sign in",
+  "setup.engines.cancel": "Cancel",
+  "setup.engines.openLoginAgain": "Open login again",
+  "setup.engines.detail.notInstalled":
+    "Markas can install it for you. No administrator rights needed.",
+  "setup.engines.detail.signIn": "Sign in opens {engine}'s own login in your browser.",
+  "setup.engines.detail.waiting": "Finish the login in your browser. Markas carries on by itself.",
+  "setup.engines.detail.installing": "This usually takes under a minute.",
+  "setup.engines.one.title": "One signed-in engine is enough to start",
+  "setup.engines.one.body":
+    "Continue unlocks once one engine is ready. You can add the other one later from Settings.",
+  "setup.engines.none.title": "No engine is signed in yet, so Continue stays locked",
+  "setup.engines.none.body":
+    "Markas needs one engine to run bots. Sign in to one you have, or install the other.",
+  "setup.engines.getHelp": "Get help",
+  "setup.engines.installFailed.title": "{engine} could not be installed",
+  "setup.engines.installFailed.offline": "There is no internet connection.",
+  "setup.engines.installFailed.permission": "This computer did not allow the install.",
+  "setup.engines.installFailed.missingTool": "A tool the installer needs is missing.",
+  "setup.engines.installFailed.body":
+    "You can retry, install it yourself with the command below, or point Markas at a copy you already have.",
+  "setup.engines.retry": "Retry",
+  "setup.engines.copyInstall": "Copy install command",
+  "setup.engines.copied": "Copied",
+  "setup.engines.locate": "Locate it",
+  "setup.engines.locate.title": "Where is {engine}?",
+  "setup.engines.locate.body": "Paste the full path to the {engine} program on this computer.",
+  "setup.engines.locate.path": "Path to the program",
+  "setup.engines.locate.use": "Use this copy",
+  "setup.engines.locate.checking": "Checking",
+  "setup.engines.signInSlow.title": "{engine} sign-in is taking a while",
+  "setup.engines.signInSlow.body":
+    "The login page may be closed or blocked. Open it again, sign in from a terminal instead, or skip {engine} for now.",
+  "setup.engines.signInTerminal": "Copy terminal command",
+  "setup.engines.skip": "Skip {engine}",
+  "setup.engines.statusFailed.title": "Markas could not check your engines",
+  "setup.engines.statusFailed.body": "The host did not answer. It will keep trying.",
+
+  "setup.model.label": "Choose a default model",
+  "setup.model.title": "Choose the model new bots start on",
+  "setup.model.body":
+    "Each engine offers its own models. Pick one for new bots. Every bot can change it later.",
+  "setup.model.search": "Search models",
+  "setup.model.engines": "Engines",
+  "setup.model.ready": "Ready",
+  "setup.model.signedInAs": "Signed in as {email}",
+  "setup.model.effort": "Effort",
+  "setup.model.effort.low": "Low",
+  "setup.model.effort.medium": "Medium",
+  "setup.model.effort.high": "High",
+  "setup.model.effort.xhigh": "Extra high",
+  "setup.model.effort.max": "Max",
+  "setup.model.none": "No model matches your search.",
+  "setup.model.loading": "Loading models",
+  "setup.model.fallback.title": "{engine} did not list its models",
+  "setup.model.fallback.body":
+    "Markas shows a built-in list until the engine answers. You can still continue.",
+  "setup.model.failed.title": "{engine} did not list its models",
+  "setup.model.failed.body": "You can use the engine's own default, retry, or type a model name.",
+  "setup.model.useDefault": "Use the engine's default",
+  "setup.model.typeName": "Type a model name",
+  "setup.model.custom": "Model name",
+  "setup.model.custom.use": "Use this model",
+  "setup.model.engineDefault": "The engine's own default",
+  "setup.model.otherWaiting": "{engine} is not ready yet. Its models appear here once it is.",
+
+  "setup.consent.label": "Understand the risk",
+  "setup.consent.title": "Bots act on this computer for you",
+  "setup.consent.body": "Read this once. You can tighten what each bot may do at any time.",
+  "setup.consent.files.title": "They can read and change files and run commands",
+  "setup.consent.files.body":
+    "A bot works inside its own folder by default, and asks you before it reaches anything else.",
+  "setup.consent.web.title": "They can use the web in their own browser",
+  "setup.consent.web.body":
+    "Each bot browses in a separate profile. Passwords are typed in by Markas, never shown to the bot.",
+  "setup.consent.approval.title": "Actions that matter stop for your approval",
+  "setup.consent.approval.body":
+    "Sending messages, using a login and changing a bot's permissions ask you first.",
+  "setup.consent.agree":
+    "I understand that bots can act on my computer and accounts, and I will only run tasks I trust.",
+  "setup.consent.private": "Nothing is sent to Markas. There is no telemetry.",
+  "setup.consent.needed.title": "Tick the box to continue",
+  "setup.consent.needed.body":
+    "Markas cannot run bots without it. Nothing is installed or started until you agree.",
+} as const;

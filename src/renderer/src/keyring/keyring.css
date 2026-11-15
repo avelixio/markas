@@ -1,0 +1,74 @@
+@import "../ui/primitives.css";
+
+.mk-share-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mk-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 8px;
+  border: 1px solid var(--mk-border-subtle);
+  border-radius: 8px;
+  color: var(--mk-text-primary);
+  cursor: pointer;
+}
+
+.mk-share.is-active {
+  border-color: var(--mk-accent-base);
+  background: var(--mk-bg-raised);
+}
+
+.mk-share input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--mk-accent-base);
+}
+
+.mk-share:focus-within {
+  outline: 2px solid var(--mk-accent-base);
+  outline-offset: 2px;
+}
+
+/* A bot's sigil at list size. The avatar's own colour class sets the tile colour. */
+.mk-share__sigil.bot-avatar {
+  width: 18px;
+  height: 18px;
+}
+
+.mk-share__sigil .agent-mark {
+  width: 18px;
+  height: 18px;
+}
+
+.mk-sigil-row {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.mk-revealed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--mk-radius-control);
+  background: var(--mk-info-soft);
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mk-revealed code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--mk-bg-raised);
+  color: var(--mk-text-primary);
+  font-family: var(--mk-font-mono);
+  overflow-wrap: anywhere;
+}

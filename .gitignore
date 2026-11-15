@@ -1,0 +1,26 @@
+node_modules/
+out/
+dist/
+coverage/
+.DS_Store
+*.log
+*.local
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pem
+.idea/
+.vscode/
+playwright-report/
+test-results/
+.markas-browser-test/
+
+# Design build outputs: regenerate with `node design/build.mjs`
+design/exports/
+design/markas.figcraft
+design/portal/
+
+# Helper worktrees and local session files
+.claude/

@@ -1,0 +1,76 @@
+{
+  "name": "markas",
+  "productName": "Markas",
+  "version": "0.1.0",
+  "description": "A local-first multi-agent workspace host for Claude Code, Codex and ACP engines, served as a web UI.",
+  "author": {
+    "name": "Markas contributors"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "ai-agents",
+    "bun",
+    "claude-code",
+    "codex",
+    "local-first",
+    "solidjs"
+  ],
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.4",
+  "engines": {
+    "bun": ">=1.3.11"
+  },
+  "scripts": {
+    "dev": "bun run build:ui && bun src/host/cli.ts serve",
+    "serve": "bun src/host/cli.ts serve",
+    "build": "bun run build:ui",
+    "build:ui": "vite build",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:renderer": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "bun run typecheck:node && bun run typecheck:renderer",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:backend": "vitest run src/backend src/host",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run build && bun run test:e2e",
+    "package": "bun scripts/package.ts",
+    "test:e2e": "bun scripts/e2e.ts",
+    "test:browser": "bun scripts/browser-check.ts",
+    "test:e2e:ui": "bun run build:ui && node scripts/e2e-ui.mjs",
+    "test:coverage": "vitest run --coverage",
+    "desktop": "bun build src/desktop/main.ts --target=node --format=cjs --external electron --outfile dist/desktop/main.cjs && bun run build:ui && electron .",
+    "package:desktop": "bun scripts/package-desktop.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.228",
+    "@fontsource-variable/inter": "5.3.0",
+    "playwright-core": "1.65.0",
+    "solid-js": "1.9.14",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.8",
+    "@solidjs/testing-library": "0.8.10",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.1",
+    "@types/bun": "1.3.11",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.10",
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3",
+    "jsdom": "30.0.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "7.3.6",
+    "vite-plugin-solid": "2.11.14",
+    "vitest": "4.1.10"
+  },
+  "bin": {
+    "markas": "./src/host/cli.ts"
+  },
+  "main": "dist/desktop/main.cjs",
+  "trustedDependencies": [
+    "electron"
+  ]
+}

@@ -1,0 +1,39 @@
+# Feature checklist
+
+Every feature is finished one at a time, in this order.
+A feature is done only when all four columns are ticked:
+
+- **Design**: the screens exist in `design/`, in English and Bahasa Indonesia.
+- **Fallbacks**: every way it can go wrong has a designed way forward (retry, manual way, or another route), as in frame 41.
+- **Code**: the app does what the design shows, including every fallback, with all text in the translation table.
+- **Tested**: automated tests cover the normal path and each fallback, and it was tried by hand in the real app.
+
+| # | Feature | Frames | Design | Fallbacks | Code | Tested |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Setup: language, engines, default model, consent | 01a, 01, 01c, 02, 41 | Yes | Yes | Yes: the seven-step setup opens on first run and drives the host | Partly: automated, and walked through by hand with a first bot that said hello; Install and Sign in not pressed |
+| 2 | Setup: Dispatch, describe or pick a bot, review and create | 36 to 41, 19 | Yes | Yes | Yes: Dispatch talks on an engine session of its own that may use no tool, proposes a draft, moves to the other engine when one is out of plan, and mends a broken bot file | Partly: automated, and one real talk with Dispatch ended in a draft on the review screen; moving engines and file mending not tried by hand |
+| 3 | Ready-made bots and bot files (`bots/` folder, import, export) | 38, 41 | Yes | Partly | Yes: ready-made bots and file import are wired into setup, and a bot's settings save it as a bot file | Partly: automated only |
+| 4 | Chats: crew list, conversation, composer, queue | 05, 06, 27 to 29 | Yes | Partly (34) | Partly: bilingual chat screens merged, not yet tried by hand | Partly: automated only |
+| 5 | Bot to bot work and Room | 07, 35 | Yes | Partly: a question that cannot be sent is kept and says why | Partly, shipped as Preview: bots message each other, and a room names a lead and its members; asking the room sends the question to the lead with who is in the room, and opens the lead's chat; a room has no conversation, memory or rounds of its own, and Dispatch does not lead rooms | Partly: automated, and the page was seen in the real app with one bot; no room was asked for real |
+| 6 | Files panel and Archive | 08, 23 | Yes | Partly: a folder that cannot be read says why and can be asked again | Yes: the Files panel of a chat shows the bot's own folder, the files that went through the chat and the shared folder, finds a file by name and opens it; the host refuses any path or link that leaves those folders | Partly: automated, and the panel was seen in the real app on a real bot folder |
+| 7 | Bot settings and access levels | 09, 11, 31 | Yes | Partly | Access levels yes | Yes |
+| 8 | Bot browser and hand-off | 05, 10 | Yes | Partly: a browser that will not open leaves the card usable | Yes: bots drive the browser, held to each bot's allowed sites; the Browser panel draws the bot's page and lets the person take over, and a hand-off card opens the bot's browser, gives the tab back or skips the step | Partly: automated only |
+| 9 | Keyring, keys in use, one-time codes | 12, 25, 11 | Partly (no one-time codes) | Partly: a setup key that cannot make codes is refused before saving | Partly: keys are added, shared, shown and removed from the Keyring; a two-step setup key is checked as it is pasted; bots use keys and one-time codes through the host; a live view of keys in use is not built | Partly: automated only |
+| 10 | Rounds and standing approvals | 14, 24, 33 | Partly (no standing approvals) | No | Yes: the round form names what a round may do without asking, a folder, a tool or an exact site, and says when the bot's engine cannot use it yet; the host applies and logs each use | Partly: automated only |
+| 11 | Logbook | 13 | Yes | No | Yes | Partly |
+| 12 | Switchboard and login health | 15 | Yes | Partly: a keyring that will not open still shows the engines | Partly, shipped as Preview: each engine's state with the command to sign in again, and the saved logins with the bots that use them; outside services and checking whether a site is still signed in are not built | Partly: automated, and seen in the real app with one engine signed in and one not installed |
+| 13 | Notifications, undo, needs-you states | 16, 17, 18, 30, 43 | Yes | Yes | Yes: a bell on the rail lists what waits on the person first (a browser step, a question or an approval), then what finished or failed, opens that bot's chat or its browser, and marks the news read; deleting a bot moves it to a trash for 30 days with everything it had, a notice offers Undo right away, and Settings lists deleted bots with Restore and Delete forever (ADR 0013) | Partly: automated, and by hand in the real app a bot was deleted, undone from the notice, deleted again and restored from Settings; the chat's redraw after undo was seen in a recording of the real app |
+| 14 | Signal and beacon | 21 | Yes | Partly | Partly: a beacon on the rail shows the whole crew's state in every area, amber when a bot waits on the person, and opens Chats; the always-on-top signal strip outside the window is not built | Partly: automated only |
+| 15 | Fuel | 22 | Yes | Partly: an engine that reports no plan says so, a failed read can be asked again | Partly: each engine's plan as the engine reports it, turns per day and per bot over 7 or 30 days; moving held bots to a backup engine is not built | Partly: automated, and seen in the real app with one real turn counted |
+| 16 | App settings | 20 | Yes | Partly: a choice that cannot be saved says so and changes nothing | Partly: language, the engine, model and effort new bots start with, the host address and version, saving a copy of the data, and running setup again; deleted bots can be restored or deleted forever here; start at login and keep awake are not built because they change the computer outside Markas, a light theme is not built because the chat area still has colours written for a dark background, and a backup engine is not built | Partly: automated, and seen in the real app; no setting was changed by hand |
+| 17 | Optimizer: automatic compact, lean working, shorter tool output, tokens saved | 42 | Yes | Partly: a setting that cannot be saved says so and stays as it was | Partly: the Optimizer page shows how full each bot's conversation is, counts the tokens saved by folded conversations from the engines' own numbers and by long pages cut from their characters, and switches automatic compact (with its fold point, for Codex) and a lean way of working; it reports whether rtk is on the computer but does not pass bot commands through it | Partly: automated, and by hand in the real app the page was read and one real Claude Code answer filled a context meter |
+
+## Launch
+
+A feature that works end to end but is not yet polished ships with a Preview label in the interface, and loses it once all four columns are ticked.
+
+## Rules while working through the list
+
+- Finish one feature before starting the next, unless a later one blocks it.
+- Draw any missing fallback in `design/` before coding it.
+- Update this table in the same commit as the work.
