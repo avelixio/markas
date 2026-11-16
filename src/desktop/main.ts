@@ -2,9 +2,9 @@
 // It starts the host if none is running, shows the interface in its own window, and keeps a
 // tray icon so bots go on working when the window is closed.
 import { type ChildProcess, spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, Menu, nativeImage, shell, Tray } from "electron";
+import { app, BrowserWindow, dialog, Menu, nativeImage, session, shell, Tray } from "electron";
 import {
   dataRoot,
   findRunningHost,
@@ -42,13 +42,46 @@ async function connect(): Promise<HostLink> {
   if (app.isPackaged && !existsSync(command)) {
     throw new Error(`The Markas host is missing from this installation (${command}).`);
   }
-  ownedHost = spawn(command, args, { stdio: "ignore", windowsHide: true });
-  ownedHost.on("exit", () => {
+  // What the host prints while starting is kept, so a host that will not start can say why.
+  const logPath = join(root, "logs", "desktop-host.log");
+  let log: number | "ignore" = "ignore";
+  try {
+    mkdirSync(join(root, "logs"), { recursive: true });
+    log = openSync(logPath, "w");
+  } catch {
+    // Without a log the host still starts; only the reason for a failure is lost.
+  }
+  let stopped: string | null = null;
+  ownedHost = spawn(command, args, { stdio: ["ignore", log, log], windowsHide: true });
+  if (typeof log === "number") closeSync(log);
+  ownedHost.on("error", (error) => {
+    stopped = error.message;
     ownedHost = null;
   });
-  const link = await waitForHost(root);
-  if (!link) throw new Error("The Markas host did not start. Try opening Markas again.");
+  ownedHost.on("exit", (code, signal) => {
+    stopped = signal ? `it was stopped by the system (${signal})` : `it ended with code ${code}`;
+    ownedHost = null;
+  });
+  const link = await waitForHost(root, 20_000, async (dir) => {
+    if (stopped) throw new Error(hostFailure(stopped, logPath));
+    return findRunningHost(dir);
+  });
+  if (!link) throw new Error(hostFailure("it did not answer in 20 seconds", logPath));
   return link;
+}
+
+/** Why the host could not be reached, with the last lines it printed and where the rest is. */
+function hostFailure(reason: string, logPath: string): string {
+  let printed = "";
+  try {
+    printed = readFileSync(logPath, "utf8").trim().split("\n").slice(-6).join("\n");
+  } catch {
+    // No log could be read; the reason alone is shown.
+  }
+  const lines = [`The Markas host did not start: ${reason}.`];
+  if (printed) lines.push("", "It printed:", printed);
+  lines.push("", `The full record is in ${logPath}`);
+  return lines.join("\n");
 }
 
 function createWindow(link: HostLink): BrowserWindow {
@@ -70,6 +103,20 @@ function createWindow(link: HostLink): BrowserWindow {
     },
   });
   window.once("ready-to-show", () => window.show());
+  // A page that is slow or blocked must not leave Markas running with nothing to see.
+  setTimeout(() => {
+    if (!window.isDestroyed() && !window.isVisible() && !quitting) window.show();
+  }, 4_000);
+  let warned = false;
+  window.webContents.on("did-fail-load", (_event, code, description, url, isMainFrame) => {
+    if (!isMainFrame || warned || quitting) return;
+    warned = true;
+    if (!window.isDestroyed()) window.show();
+    dialog.showErrorBox(
+      "Markas could not show its window",
+      `The page at ${new URL(url).origin} did not load (${description}, ${code}).\n\nThe host is running. Security or proxy software on this computer may be blocking pages on this computer itself (127.0.0.1).\nYou can still open Markas in your browser: run "markas open" from the host folder.`,
+    );
+  });
   // Closing the window keeps Markas running in the tray, so bots and rounds carry on.
   window.on("close", (event) => {
     if (quitting) return;
@@ -136,6 +183,9 @@ if (!app.requestSingleInstanceLock()) {
     .then(async () => {
       Menu.setApplicationMenu(null);
       const link = await connect();
+      // The window only ever loads the host on this computer, so it never goes through a proxy:
+      // a company proxy setting must not stand between Markas and itself.
+      await session.defaultSession.setProxy({ mode: "direct" });
       mainWindow = createWindow(link);
       tray = createTray();
     })
