@@ -82,6 +82,7 @@ The packages are not signed with a paid certificate yet, so each system asks onc
 - **macOS** says Apple could not verify Markas: open System Settings, go to Privacy & Security, and choose Open Anyway next to Markas.
 If that button does not appear, run `xattr -dr com.apple.quarantine /Applications/Markas.app` in Terminal.
 - **Linux**: make the file runnable first with `chmod +x Markas-*.AppImage`.
+If it says AppImages require FUSE, either install it (`sudo apt install libfuse2t64` on Ubuntu 24.04, `libfuse2` on older ones) or start it with `./Markas-*.AppImage --appimage-extract-and-run`.
 
 The macOS and Linux packages are built and started automatically on those systems, but have had less hands-on use than the Windows one.
 
