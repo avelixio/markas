@@ -1,0 +1,117 @@
+name: Release packages
+
+# Builds the macOS and Linux packages on their own systems and attaches them to a release.
+# Started by hand: the Windows packages are built and attached separately.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to build
+        required: true
+        default: main
+      release:
+        description: Release tag to attach the files to (empty builds and tests only)
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.inputs.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple silicon
+            runner: macos-15
+            host: macos-arm64
+          - name: macOS Intel
+            runner: macos-15-intel
+            host: macos-x64
+          - name: Linux x64
+            runner: ubuntu-24.04
+            host: linux-x64
+    env:
+      # No signing certificate is used; macOS builds get an ad-hoc signature from the builder config.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build the packages
+        run: bun run package:desktop
+
+      - name: List what was built
+        run: ls -la dist/release dist/desktop-release
+
+      - name: Check the command-line program starts
+        env:
+          HOST_TARGET: ${{ matrix.host }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          # No host is running here, so a working program answers exactly that.
+          "dist/release/markas-${version}-${HOST_TARGET}/markas" status > status.txt 2>&1 || true
+          cat status.txt
+          grep -q "host is not running" status.txt
+
+      - name: Check the macOS app is signed and starts
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          app=$(find dist/desktop-release -maxdepth 2 -name "Markas.app" | head -1)
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E "Signature|Identifier|flags"
+          "$app/Contents/MacOS/Markas" > app.log 2>&1 &
+          pid=$!
+          started=no
+          for _ in $(seq 1 30); do
+            sleep 2
+            if "$app/Contents/Resources/host/markas" status > status.txt 2>&1; then
+              started=yes
+              break
+            fi
+          done
+          cat status.txt || true
+          kill "$pid" 2>/dev/null || true
+          pkill -f "Resources/host/markas" 2>/dev/null || true
+          if [ "$started" != yes ]; then
+            echo "The app did not start its host."
+            tail -40 app.log || true
+            exit 1
+          fi
+
+      - name: Attach the files to the release
+        if: github.event.inputs.release != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.inputs.release }}
+          HOST_TARGET: ${{ matrix.host }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          files=("dist/release/markas-${version}-${HOST_TARGET}.zip")
+          while IFS= read -r file; do files+=("$file"); done < <(find dist/desktop-release -maxdepth 1 -type f \( -name "*.dmg" -o -name "Markas-*-mac-*.zip" -o -name "*.AppImage" \))
+          shasum -a 256 "${files[@]}" | sed 's|  .*/|  |' > "SHA256SUMS-${HOST_TARGET}.txt"
+          cat "SHA256SUMS-${HOST_TARGET}.txt"
+          gh release upload "$RELEASE_TAG" "${files[@]}" "SHA256SUMS-${HOST_TARGET}.txt" --clobber --repo "$GITHUB_REPOSITORY"

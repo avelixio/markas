@@ -43,6 +43,10 @@ module.exports = {
     target: ["dmg", "zip"],
     icon: "build/icon.png",
     category: "public.app-category.productivity",
+    // There is no Apple developer certificate yet. An ad-hoc signature is the least macOS accepts on
+    // Apple silicon; without it the app is reported as damaged and will not start.
+    identity: "-",
+    hardenedRuntime: false,
   },
   linux: { target: ["AppImage"], icon: "build/icon.png", category: "Utility" },
   artifactName: "Markas-${version}-${os}-${arch}.${ext}",
