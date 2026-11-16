@@ -101,6 +101,49 @@ jobs:
             exit 1
           fi
 
+      # The way a person opens it: from the disk image into Applications, then started by macOS itself.
+      - name: Check the installed macOS app stays open
+        if: runner.os == 'macOS'
+        run: |
+          set -uo pipefail
+          dmg=$(find dist/desktop-release -maxdepth 1 -name "*.dmg" | head -1)
+          hdiutil attach "$dmg" -nobrowse -mountpoint /Volumes/MarkasCheck
+          rm -rf /Applications/Markas.app
+          cp -R /Volumes/MarkasCheck/Markas.app /Applications/
+          hdiutil detach /Volumes/MarkasCheck
+          rm -rf "$HOME/.markas"
+          codesign --verify --deep --strict /Applications/Markas.app && echo "installed copy: signature valid"
+          spctl -a -vv /Applications/Markas.app 2>&1 || true
+          open -a /Applications/Markas.app
+          alive=yes
+          for second in 5 10 15 20 25 30; do
+            sleep 5
+            if pgrep -f "/Applications/Markas.app/Contents/MacOS/Markas" > /dev/null; then
+              echo "after ${second}s: running"
+            else
+              echo "after ${second}s: NOT running"
+              alive=no
+              break
+            fi
+          done
+          windows=$(osascript -e 'tell application "System Events" to count windows of (first process whose name is "Markas")' 2>&1 || true)
+          echo "windows: $windows"
+          /Applications/Markas.app/Contents/Resources/host/markas status 2>&1 || true
+          echo "--- crash reports"
+          ls -la "$HOME/Library/Logs/DiagnosticReports" 2>/dev/null || true
+          for report in "$HOME"/Library/Logs/DiagnosticReports/*Markas*; do
+            [ -f "$report" ] && head -c 6000 "$report"
+          done
+          echo "--- system log"
+          log show --last 3m --style compact --predicate 'process == "Markas" OR eventMessage CONTAINS[c] "id.markas.app"' 2>/dev/null | tail -60 || true
+          echo "--- desktop log"
+          cat "$HOME/.markas/logs/desktop.log" 2>/dev/null || true
+          pkill -f "/Applications/Markas.app" 2>/dev/null || true
+          if [ "$alive" != yes ]; then
+            echo "The installed app did not stay open."
+            exit 1
+          fi
+
       - name: Attach the files to the release
         if: github.event.inputs.release != ''
         env:
