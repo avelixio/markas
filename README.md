@@ -58,17 +58,32 @@ Your bots still reach the services their engines use, such as Anthropic and Open
 | Switchboard | Checking whether a saved website login still works |
 | Keys in use | A live view of which bot is using which key |
 | Fuel | Moving bots to a backup engine when one runs out of plan |
-| Packages | Installers for macOS and Linux, and a signed Windows installer |
+| Packages | Signed installers for Windows and macOS, so neither system warns when you open them |
 
 The interface designs live in [`design/`](design).
 
 ## Get it
 
-1. Download the installer for your system from [Releases](../../releases).
-On Windows that is `Markas-Setup-<version>.exe`.
-The installer is not signed yet, so Windows may show a "Windows protected your PC" notice; choose More info, then Run anyway.
+1. Download the file for your system from [Releases](../../releases).
+
+| System | File |
+| --- | --- |
+| Windows (64-bit) | `Markas-Setup-<version>.exe` |
+| Mac with Apple silicon (M1 and newer) | `Markas-<version>-mac-arm64.dmg` |
+| Mac with an Intel chip | `Markas-<version>-mac-x64.dmg` |
+| Linux (64-bit) | `Markas-<version>-linux-x86_64.AppImage` |
+
 2. Install and sign in to at least one engine: Claude Code or Codex.
-3. Open Markas from the Start menu or the desktop shortcut.
+3. Open Markas.
+
+The packages are not signed with a paid certificate yet, so each system asks once before it opens Markas:
+
+- **Windows** may show "Windows protected your PC": choose More info, then Run anyway.
+- **macOS** says Apple could not verify Markas: open System Settings, go to Privacy & Security, and choose Open Anyway next to Markas.
+If that button does not appear, run `xattr -dr com.apple.quarantine /Applications/Markas.app` in Terminal.
+- **Linux**: make the file runnable first with `chmod +x Markas-*.AppImage`.
+
+The macOS and Linux packages are built and started automatically on those systems, but have had less hands-on use than the Windows one.
 
 Markas opens in its own window.
 Closing the window keeps it running in the tray, so your bots carry on; choose Quit Markas from the tray icon to stop it.
