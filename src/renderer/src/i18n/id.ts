@@ -630,22 +630,22 @@ export const id: Record<MessageKey, string> = {
   "chat.onboarding.work.description":
     "Membantu merencanakan, menata, dan mengerjakan pekerjaan serta proyek yang sedang berjalan, sambil menjaga prioritas, langkah berikutnya, dan hasil kerja tetap jelas.",
   "chat.onboarding.work.message":
-    "Fokus pada pekerjaan dan proyek saya. Bantu saya merencanakan, menata, dan mengerjakannya secara proaktif.",
+    "Keahlian Anda adalah pekerjaan dan proyek saya: merencanakan, menata, dan mengerjakannya. Jangan mulai mengerjakan apa pun dulu: sapa saya dalam satu atau dua baris, lalu tanyakan mau mulai dari mana.",
   "chat.onboarding.research": "Riset & penulisan",
   "chat.onboarding.research.description":
     "Meriset topik, merangkum sumber yang tepercaya, dan membantu menyusun, menyunting, serta memperhalus tulisan yang jelas.",
   "chat.onboarding.research.message":
-    "Fokus pada riset dan penulisan. Bantu saya menyelidiki topik dan mengubah temuannya menjadi tulisan yang jelas dan berguna.",
+    "Keahlian Anda adalah riset dan penulisan: menyelidiki topik dan mengubah temuannya menjadi tulisan yang jelas dan berguna. Jangan mulai mengerjakan apa pun dulu: sapa saya dalam satu atau dua baris, lalu tanyakan mau mulai dari mana.",
   "chat.onboarding.sales": "Penjualan & penjangkauan",
   "chat.onboarding.sales.description":
     "Membantu riset calon pelanggan, persiapan penjualan, pesan penjangkauan yang personal, dan tindak lanjut yang teratur.",
   "chat.onboarding.sales.message":
-    "Fokus pada penjualan dan penjangkauan. Bantu saya meriset calon pelanggan, menyiapkan pesan yang personal, dan mengelola tindak lanjut.",
+    "Keahlian Anda adalah penjualan dan penjangkauan: meriset calon pelanggan, menyiapkan pesan yang personal, dan mengelola tindak lanjut. Jangan mulai mengerjakan apa pun dulu: sapa saya dalam satu atau dua baris, lalu tanyakan mau mulai dari mana.",
   "chat.onboarding.other": "Yang lain",
   "chat.onboarding.custom.role": "Fokus khusus",
   "chat.onboarding.custom.description": "Fokus utama: {topic}.",
   "chat.onboarding.custom.message":
-    "Fokus utama saya untuk Anda adalah: {topic}. Anggap ini sebagai keahlian utama Anda.",
+    "Keahlian Anda adalah: {topic}. Jangan mulai mengerjakan apa pun dulu: sapa saya dalam satu atau dua baris, lalu tanyakan mau mulai dari mana.",
   "chat.browser.label": "Peramban",
   "chat.browser.tabs": "Tab peramban",
   "chat.browser.tab.controlled": "{title}, dikendalikan oleh {name}",

@@ -1558,7 +1558,7 @@ describe("Markas connected desktop shell", () => {
     await waitFor(() =>
       expect(window.markas.agent.sendMessage).toHaveBeenCalledWith({
         botId: "chief",
-        text: "Focus on my work and projects. Help me plan, organize, and execute them proactively.",
+        text: "Your specialty is my work and projects: planning, organizing and carrying them out. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
         attachmentDraftIds: [],
       }),
     );
@@ -1590,7 +1590,7 @@ describe("Markas connected desktop shell", () => {
     );
     expect(window.markas.agent.sendMessage).toHaveBeenCalledWith({
       botId: "chief",
-      text: "My main focus for you is: Plan product launches. Treat this as your ongoing specialty.",
+      text: "Your specialty is: Plan product launches. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
       attachmentDraftIds: [],
     });
   });
@@ -1919,7 +1919,7 @@ describe("Markas connected desktop shell", () => {
     await waitFor(() =>
       expect(window.markas.agent.sendMessage).toHaveBeenCalledWith({
         botId: "chief",
-        text: "Fokus pada riset dan penulisan. Bantu saya menyelidiki topik dan mengubah temuannya menjadi tulisan yang jelas dan berguna.",
+        text: "Keahlian Anda adalah riset dan penulisan: menyelidiki topik dan mengubah temuannya menjadi tulisan yang jelas dan berguna. Jangan mulai mengerjakan apa pun dulu: sapa saya dalam satu atau dua baris, lalu tanyakan mau mulai dari mana.",
         attachmentDraftIds: [],
       }),
     );

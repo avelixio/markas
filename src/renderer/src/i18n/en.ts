@@ -615,22 +615,22 @@ export const en = {
   "chat.onboarding.work.description":
     "Helps plan, organize, and execute ongoing work and projects while keeping priorities, next steps, and deliverables clear.",
   "chat.onboarding.work.message":
-    "Focus on my work and projects. Help me plan, organize, and execute them proactively.",
+    "Your specialty is my work and projects: planning, organizing and carrying them out. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
   "chat.onboarding.research": "Research & writing",
   "chat.onboarding.research.description":
     "Researches topics, synthesizes reliable sources, and helps draft, edit, and refine clear writing.",
   "chat.onboarding.research.message":
-    "Focus on research and writing. Help me investigate topics and turn the findings into clear, useful writing.",
+    "Your specialty is research and writing: looking into topics and turning the findings into clear, useful writing. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
   "chat.onboarding.sales": "Sales & outreach",
   "chat.onboarding.sales.description":
     "Supports prospect research, sales preparation, personalized outreach, and organized follow-up work.",
   "chat.onboarding.sales.message":
-    "Focus on sales and outreach. Help me research prospects, prepare personalized outreach, and manage follow-ups.",
+    "Your specialty is sales and outreach: researching prospects, preparing personal outreach and keeping up with follow-ups. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
   "chat.onboarding.other": "Something else",
   "chat.onboarding.custom.role": "Custom focus",
   "chat.onboarding.custom.description": "Primary focus: {topic}.",
   "chat.onboarding.custom.message":
-    "My main focus for you is: {topic}. Treat this as your ongoing specialty.",
+    "Your specialty is: {topic}. Do not start any work yet: say hello in a line or two and ask me what to begin with.",
   "chat.browser.label": "Browser",
   "chat.browser.tabs": "Browser tabs",
   "chat.browser.tab.controlled": "{title}, controlled by {name}",
