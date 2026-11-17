@@ -66,6 +66,7 @@ const PERMISSION_KIND_WORDS: Record<PermissionNote["kind"], string> = {
   network: "use the network",
   tool: "use a tool",
   protected: "open Markas's own data",
+  teammate: "add a bot to the crew",
 };
 
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -292,6 +293,11 @@ export async function startHost(
         "done",
         note.decision === "covered" ? "bot" : "you",
       )
+      .catch((error: unknown) => console.error("The logbook could not be written:", error));
+  });
+  service.on("teammate", (added) => {
+    void logbook
+      .record("bot.created", `${added.botName}, proposed by ${added.proposedBy}`)
       .catch((error: unknown) => console.error("The logbook could not be written:", error));
   });
   service.on("event", (event: { type?: string }) => {

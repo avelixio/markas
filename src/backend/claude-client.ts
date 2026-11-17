@@ -42,6 +42,13 @@ import {
   type RpcError,
   type ThreadResponse,
 } from "./protocol";
+import {
+  PROPOSE_TEAMMATE_DESCRIPTION,
+  PROPOSE_TEAMMATE_TOOL,
+  TEAMMATE_NAME_MAX,
+  TEAMMATE_PURPOSE_MAX,
+  TEAMMATE_ROLE_MAX,
+} from "./teammate-tool";
 
 const execFileAsync = promisify(execFile);
 
@@ -628,6 +635,16 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
               replyToMessageId: z.string().nullable().optional(),
             },
             (args) => call("markas", "send_message", args),
+          ),
+          tool(
+            PROPOSE_TEAMMATE_TOOL,
+            PROPOSE_TEAMMATE_DESCRIPTION,
+            {
+              name: z.string().min(1).max(TEAMMATE_NAME_MAX),
+              role: z.string().min(1).max(TEAMMATE_ROLE_MAX),
+              description: z.string().min(1).max(TEAMMATE_PURPOSE_MAX),
+            },
+            (args) => call("markas", PROPOSE_TEAMMATE_TOOL, args),
           ),
           tool(KEYRING_LIST_TOOL, KEYRING_TOOL_DESCRIPTIONS[KEYRING_LIST_TOOL], {}, (args) =>
             call("markas", KEYRING_LIST_TOOL, args),

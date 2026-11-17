@@ -502,6 +502,7 @@ export const id: Record<MessageKey, string> = {
   "permission.ask.network": "{name} ingin memakai internet",
   "permission.ask.tool": "{name} ingin memakai sebuah alat",
   "permission.ask.protected": "{name} ingin membuka data Markas sendiri",
+  "permission.ask.teammate": "{name} mengusulkan bot baru untuk kru Anda",
   "permission.protected.warning":
     "Di sinilah token masuk dan kunci Anda disimpan. Bot hampir tidak pernah membutuhkannya.",
   "permission.once": "Izinkan sekali",
@@ -514,6 +515,7 @@ export const id: Record<MessageKey, string> = {
   "permission.chat.command":
     "Untuk sesi ini: setiap perintah yang dijalankan bot ini di obrolan ini, sampai sesi obrolan berakhir. Tiap perintah tetap dicatat di Logbook.",
   "permission.chat.protected": "Ini hanya diizinkan satu kali.",
+  "permission.chat.teammate": "Bot baru hanya ditambahkan satu per satu.",
   "logbook.action.bot.access": "Mengubah akses bot",
   "logbook.action.access.allowed": "Mengizinkan permintaan bot",
   "logbook.action.access.refused": "Menolak permintaan bot",

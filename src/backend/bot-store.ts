@@ -48,8 +48,9 @@ export interface NewBotProfile {
   description: string;
   model: AgentModelId;
   reasoningEffort: AgentReasoningEffort;
-  avatarShape: BotAvatarShape;
-  avatarColor: BotAvatarColor;
+  /** Left out, the bot gets the look that goes with its id. */
+  avatarShape?: BotAvatarShape;
+  avatarColor?: BotAvatarColor;
   access: AccessLevel;
   /** The bot's own folder. Left out, it goes under the bots folder, named after the bot's id. */
   workspacePath?: string;
@@ -126,8 +127,8 @@ export class BotStore {
         description: profile.description.trim().slice(0, DESCRIPTION_MAX),
         model: profile.model,
         reasoningEffort: profile.reasoningEffort,
-        avatarShape: profile.avatarShape,
-        avatarColor: profile.avatarColor,
+        avatarShape: profile.avatarShape ?? record.avatarShape,
+        avatarColor: profile.avatarColor ?? record.avatarColor,
         access: profile.access,
         workspacePath: profile.workspacePath ?? record.workspacePath,
         madeInFull: true,

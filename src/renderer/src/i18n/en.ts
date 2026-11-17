@@ -489,6 +489,7 @@ export const en = {
   "permission.ask.network": "{name} wants to use the internet",
   "permission.ask.tool": "{name} wants to use a tool",
   "permission.ask.protected": "{name} wants to open Markas's own data",
+  "permission.ask.teammate": "{name} proposes a new bot for your crew",
   "permission.protected.warning":
     "This is where your sign-in token and keys are kept. A bot almost never needs it.",
   "permission.once": "Allow once",
@@ -503,6 +504,7 @@ export const en = {
   "permission.chat.command":
     "For this session: every command this bot runs in this chat, until the chat's session ends. Each one is still written in the Logbook.",
   "permission.chat.protected": "This is only ever allowed one time.",
+  "permission.chat.teammate": "A new bot is only ever added one at a time.",
   "logbook.action.bot.access": "Changed a bot's access",
   "logbook.action.access.allowed": "Allowed a bot's request",
   "logbook.action.access.refused": "Refused a bot's request",

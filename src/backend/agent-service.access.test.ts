@@ -202,6 +202,74 @@ describe("AgentService access levels", () => {
     expect(client.responses.at(-1)).toEqual({ id: "patch-1", result: { decision: "approved" } });
   });
 
+  it("adds a teammate a bot proposed only after the person says yes", async () => {
+    const { service, client, threadId, prompts } = await setup();
+    const added: string[] = [];
+    service.on("teammate", (bot) => added.push(bot.botName));
+    const propose = (id: string, args: unknown) =>
+      client.sendRequest({
+        id,
+        method: "item/tool/call",
+        params: {
+          threadId,
+          turnId: "turn-1",
+          callId: `call-${id}`,
+          namespace: "markas",
+          tool: "propose_teammate",
+          arguments: args,
+        },
+      });
+    const answerOf = async (id: string) => {
+      await waitFor(() => client.responses.some((response) => response.id === id));
+      const result = client.responses.find((response) => response.id === id)?.result as {
+        success: boolean;
+        contentItems: Array<{ text: string }>;
+      };
+      return { success: result.success, text: result.contentItems[0]?.text ?? "" };
+    };
+    const juno = { name: "Juno", role: "Writes and edits", description: "Drafts the newsletter." };
+
+    // A no adds nobody.
+    propose("t-1", juno);
+    await waitFor(() => prompts().length === 1);
+    expect(prompts()[0]?.questions[0]?.permission).toEqual({
+      kind: "teammate",
+      detail: "Name: Juno\nRole: Writes and edits\nWhat it is for: Drafts the newsletter.",
+    });
+    expect(prompts()[0]?.questions[0]?.options?.map((option) => option.label)).toEqual([
+      "Allow once",
+      "Don't allow",
+    ]);
+    expect(service.listBots().some((bot) => bot.name === "Juno")).toBe(false);
+    await service.respondToPrompt({
+      requestId: prompts()[0]?.requestId ?? "",
+      answers: { permission: ["Don't allow"] },
+    });
+    expect(await answerOf("t-1")).toMatchObject({ success: false });
+    expect(service.listBots().some((bot) => bot.name === "Juno")).toBe(false);
+
+    // A yes creates it, at the careful level.
+    propose("t-2", juno);
+    await waitFor(() => prompts().length === 2);
+    await service.respondToPrompt({
+      requestId: prompts()[1]?.requestId ?? "",
+      answers: { permission: ["Allow once"] },
+    });
+    const made = await answerOf("t-2");
+    expect(made.success).toBe(true);
+    expect(made.text).toContain("Juno was added to the crew");
+    const bot = service.listBots().find((candidate) => candidate.name === "Juno");
+    expect(bot).toMatchObject({ role: "Writes and edits", access: "ask" });
+    expect(added).toEqual(["Juno"]);
+
+    // The same name again, or a proposal with nothing in it, never reaches the person.
+    propose("t-3", juno);
+    expect((await answerOf("t-3")).text).toContain("already a teammate named Juno");
+    propose("t-4", { name: " ", role: "x", description: "y" });
+    expect((await answerOf("t-4")).success).toBe(false);
+    expect(prompts()).toHaveLength(2);
+  });
+
   it("refuses a request it cannot tie to a bot", async () => {
     const { client, prompts } = await setup();
     client.sendRequest({

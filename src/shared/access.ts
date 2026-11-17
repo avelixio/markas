@@ -17,7 +17,15 @@ export function lowerAccess(a: AccessLevel, b: AccessLevel): AccessLevel {
 }
 
 /** What a bot is asking permission for. */
-export type AskKind = "read" | "write" | "command" | "network" | "tool" | "protected";
+export type AskKind =
+  | "read"
+  | "write"
+  | "command"
+  | "network"
+  | "tool"
+  | "protected"
+  /** A bot asks for a new bot to be added to the crew. */
+  | "teammate";
 
 /**
  * One thing a round may do without asking, every time it runs.
