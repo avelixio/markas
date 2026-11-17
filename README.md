@@ -105,6 +105,51 @@ On macOS and Linux run `chmod +x ./markas` first.
 | `markas uninstall` | Remove the login item |
 | `markas serve` | Run without opening a window |
 
+### Without an installer, from the source
+
+You can also run Markas straight from this repository, with nothing downloaded from Releases.
+This works the same on macOS, Linux and Windows, and takes about two minutes.
+
+You need [Git](https://git-scm.com), [Bun](https://bun.sh) 1.3.11 or newer, and Claude Code or Codex installed and signed in.
+
+1. Install Bun, if you do not have it.
+It goes into your own user folder and needs no administrator password.
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+On Windows, run `powershell -c "irm bun.sh/install.ps1 | iex"` instead.
+Close and reopen the terminal afterwards.
+
+2. Get the code and its dependencies.
+
+```bash
+git clone https://github.com/avelixio/markas.git
+cd markas
+bun install
+```
+
+3. Start Markas.
+It opens in your browser.
+
+```bash
+bun run start
+```
+
+Keep that terminal open while you use Markas; press Control and C in it to stop.
+To get newer code later, run `git pull` and `bun install` in the same folder, then start it again.
+
+If you would rather have the app in its own window, build it on your own computer:
+
+```bash
+bun run package:desktop
+```
+
+The app is then in `dist/desktop-release/` (on a Mac with Apple silicon, `dist/desktop-release/mac-arm64/Markas.app`).
+
+On a computer managed by your employer or school, check that running your own tools is allowed before you do this.
+
 ## Privacy and safety
 
 - Markas listens on your own computer only, at 127.0.0.1.
