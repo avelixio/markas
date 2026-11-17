@@ -127,7 +127,7 @@ export const en = {
   "optimizer.alwaysOn": "Always on",
   "optimizer.compact.title": "Automatic compact",
   "optimizer.compact.body":
-    "When a conversation nears the end of what the model can hold, it is folded into a summary and the bot carries on. Claude Code folds its own conversations and Markas counts what that saved; for Codex, Markas asks for the fold at the point you choose.",
+    "When a conversation nears the end of what the model can hold, it is folded into a summary and the bot carries on. Claude Code and OpenCode fold their own conversations. Markas counts what that saved for Claude Code; OpenCode does not report it. For Codex, Markas asks for the fold at the point you choose.",
   "optimizer.compact.at": "Fold a Codex conversation when it is",
   "optimizer.compact.full": "{percent}% full",
   "optimizer.compact.events.one": "{count} fold",
@@ -804,7 +804,8 @@ export const en = {
   "engine.connecting": "Connecting to engines…",
   "engine.starting": "Starting engines…",
   "engine.setup.title": "Engine setup required",
-  "engine.setup.body": "Install and sign in to Claude Code or Codex, then restart Markas.",
+  "engine.setup.body":
+    "Install and sign in to Claude Code, Codex or OpenCode, then restart Markas.",
   "engine.setup.guide": "Open Switchboard",
   "prompt.label": "Bot question",
   "prompt.bot": "The bot",

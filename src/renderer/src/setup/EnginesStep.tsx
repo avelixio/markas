@@ -70,13 +70,19 @@ export function EnginesStep(props: EnginesStepProps) {
   const [locateBusy, setLocateBusy] = createSignal(false);
   let disposed = false;
 
+  /** True once the host has said how the engines stand. */
+  const [reported, setReported] = createSignal(false);
   const shown = createMemo<EngineStatus[]>(() =>
-    ENGINES.map((id) => {
-      const status = statuses().find((candidate) => candidate.id === id) ?? CHECKING(id);
-      const local = working()[id];
-      // A finished sign-in or install shows as soon as the host reports it, even mid-request.
-      return local && status.state !== "ready" ? { ...status, state: local } : status;
-    }),
+    // Until the host answers every engine is being checked; after that, only the engines
+    // the host knows are shown, so one it does not know is never left "checking" for ever.
+    ENGINES.filter((id) => !reported() || statuses().some((candidate) => candidate.id === id)).map(
+      (id) => {
+        const status = statuses().find((candidate) => candidate.id === id) ?? CHECKING(id);
+        const local = working()[id];
+        // A finished sign-in or install shows as soon as the host reports it, even mid-request.
+        return local && status.state !== "ready" ? { ...status, state: local } : status;
+      },
+    ),
   );
   const ready = createMemo(() =>
     shown()
@@ -90,6 +96,7 @@ export function EnginesStep(props: EnginesStepProps) {
       const next = await props.client.engineStatus();
       if (disposed) return;
       setStatuses(next);
+      setReported(true);
       setStatusFailed(false);
     } catch {
       if (!disposed) setStatusFailed(true);

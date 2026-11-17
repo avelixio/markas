@@ -77,7 +77,12 @@ export type AgentPhase = "idle" | "starting" | "ready" | "restarting" | "blocked
 
 export type CapabilityState = "ready" | "setup-required" | "unavailable";
 
-export type AgentProviderId = "codex" | "claude";
+export const AGENT_PROVIDERS = ["codex", "claude", "opencode"] as const;
+export type AgentProviderId = (typeof AGENT_PROVIDERS)[number];
+
+export function isAgentProvider(value: unknown): value is AgentProviderId {
+  return typeof value === "string" && AGENT_PROVIDERS.includes(value as AgentProviderId);
+}
 export type AgentProviderState =
   | "not-started"
   | "checking"
@@ -230,7 +235,9 @@ export type AgentAuthState =
   | { kind: "signed-out" }
   | { kind: "unsupported"; accountType: string }
   | { kind: "chatgpt"; email: string | null }
-  | { kind: "claude"; email: string | null };
+  | { kind: "claude"; email: string | null }
+  /** OpenCode has no single account: it signs in to each model service by itself. */
+  | { kind: "opencode"; email: null };
 
 export interface AccountUsageWindow {
   usedPercent: number;
@@ -292,7 +299,34 @@ export const AGENT_MODELS = [
   "claude-opus-5",
   "claude-sonnet-5",
 ] as const;
-export type AgentModelId = (typeof AGENT_MODELS)[number];
+/**
+ * A model that OpenCode runs. OpenCode names its models itself, as `<provider>/<model>`, and
+ * the list differs per person, so these are not a fixed list: `opencode:anthropic/claude-sonnet-5`.
+ */
+export type OpenCodeModelId = `opencode:${string}`;
+export type AgentModelId = (typeof AGENT_MODELS)[number] | OpenCodeModelId;
+
+const OPENCODE_MODEL_PATTERN = /^opencode:[\w.@-]+\/[\w.@:/-]+$/;
+const OPENCODE_MODEL_MAX = 200;
+
+export function isOpenCodeModel(value: unknown): value is OpenCodeModelId {
+  return (
+    typeof value === "string" &&
+    value.length <= OPENCODE_MODEL_MAX &&
+    OPENCODE_MODEL_PATTERN.test(value)
+  );
+}
+
+/** The name OpenCode itself uses for the model: `<provider>/<model>`. */
+export function openCodeModelName(model: OpenCodeModelId): string {
+  return model.slice("opencode:".length);
+}
+
+/** The engine that runs a model. */
+export function providerOfModel(model: AgentModelId): AgentProviderId {
+  if (isOpenCodeModel(model)) return "opencode";
+  return model.startsWith("claude-") ? "claude" : "codex";
+}
 
 export const AGENT_REASONING_EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type AgentReasoningEffort = (typeof AGENT_REASONING_EFFORTS)[number];
@@ -333,11 +367,14 @@ export const BOT_AVATAR_COLORS = [
 export type BotAvatarColor = (typeof BOT_AVATAR_COLORS)[number];
 
 export function isAgentModel(value: unknown): value is AgentModelId {
-  return typeof value === "string" && AGENT_MODELS.includes(value as AgentModelId);
+  return (
+    typeof value === "string" &&
+    (AGENT_MODELS.includes(value as (typeof AGENT_MODELS)[number]) || isOpenCodeModel(value))
+  );
 }
 
 export function isClaudeModel(model: AgentModelId): boolean {
-  return model.startsWith("claude-");
+  return providerOfModel(model) === "claude";
 }
 
 export function isReasoningEffort(value: unknown): value is AgentReasoningEffort {

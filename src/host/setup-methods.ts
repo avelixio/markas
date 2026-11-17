@@ -1,5 +1,10 @@
 import type { EngineSetup } from "../backend/setup/engine-setup";
-import type { AgentProviderId, SaveSetupStateInput, SetupState } from "../shared/ipc";
+import {
+  type AgentProviderId,
+  isAgentProvider,
+  type SaveSetupStateInput,
+  type SetupState,
+} from "../shared/ipc";
 import type { HostMethod } from "./methods";
 import { isObject, requireString } from "./parsers";
 import type { SetupStore } from "./setup-store";
@@ -56,10 +61,10 @@ export function createSetupMethods(context: SetupMethodsContext): Record<string,
   };
 }
 
-/** The engine a call is about: given as "claude" or "codex", or as `{ engine }`. */
+/** The engine a call is about: given by its name, or as `{ engine }`. */
 function parseEngine(input: unknown): AgentProviderId {
   const engine = isObject(input) ? input.engine : input;
-  if (engine !== "claude" && engine !== "codex") throw new Error("Unknown engine.");
+  if (!isAgentProvider(engine)) throw new Error("Unknown engine.");
   return engine;
 }
 

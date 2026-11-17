@@ -17,7 +17,7 @@ import { callHost, onHostEvent } from "../host-client";
 import type { Language } from "../i18n";
 
 export type EngineId = AgentProviderId;
-export const ENGINES: EngineId[] = ["claude", "codex"];
+export const ENGINES: EngineId[] = ["claude", "codex", "opencode"];
 
 /** What setup can do next for an engine follows from this state alone. */
 export type EngineState =
@@ -237,5 +237,10 @@ export const setupClient: SetupClient = {
   },
 };
 
-export const engineName = (engine: EngineId): string =>
-  engine === "claude" ? "Claude Code" : "Codex";
+const ENGINE_NAMES: Record<EngineId, string> = {
+  claude: "Claude Code",
+  codex: "Codex",
+  opencode: "OpenCode",
+};
+
+export const engineName = (engine: EngineId): string => ENGINE_NAMES[engine];

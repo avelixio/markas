@@ -24,7 +24,13 @@ import type {
   SetMessageReactionInput,
   UpdateBotInput,
 } from "../shared/ipc";
-import { BOT_TRASH_DAYS, isClaudeModel, isReasoningEffort } from "../shared/ipc";
+import {
+  AGENT_PROVIDERS,
+  BOT_TRASH_DAYS,
+  isOpenCodeModel,
+  isReasoningEffort,
+  providerOfModel,
+} from "../shared/ipc";
 import {
   type AccessLevel,
   type AskKind,
@@ -53,8 +59,10 @@ import {
   type ClaudeCliInfo,
   CodexCliError,
   type CodexCliInfo,
+  type OpenCodeCliInfo,
   resolveClaudeCli,
   resolveCodexCli,
+  resolveOpenCodeCli,
 } from "./cli";
 import {
   mergeConversationSnapshots,
@@ -66,6 +74,7 @@ import {
 import { handleKeyTool, isKeyringTool, KEYRING_DYNAMIC_TOOLS } from "./keyring/key-tools";
 import type { KeySignIn } from "./keyring/sign-in";
 import type { DeliveryContext, MailboxStore } from "./mailbox-store";
+import { OpenCodeAgentClient } from "./opencode-client";
 import {
   type AccountRateLimitResult,
   type AccountRateLimitsReadResult,
@@ -187,6 +196,7 @@ const INITIAL_STATUS: AgentStatus = {
   providers: [
     { id: "codex", state: "not-started", version: null, message: null },
     { id: "claude", state: "not-started", version: null, message: null },
+    { id: "opencode", state: "not-started", version: null, message: null },
   ],
   capabilities: {
     chat: "unavailable",
@@ -256,12 +266,18 @@ interface ModelListResponse {
 export type AgentClientFactory = (
   provider: AgentProvider,
   requestTimeoutMs: number,
-) => Promise<{ client: AgentClient; cli: CodexCliInfo | ClaudeCliInfo }>;
+) => Promise<{ client: AgentClient; cli: EngineCliInfo }>;
+
+type EngineCliInfo = CodexCliInfo | ClaudeCliInfo | OpenCodeCliInfo;
 
 export const createInstalledCliClient: AgentClientFactory = async (provider, requestTimeoutMs) => {
   if (provider === "codex") {
     const cli = await resolveCodexCli();
     return { client: new CodexAppServerClient(cli.executable, requestTimeoutMs), cli };
+  }
+  if (provider === "opencode") {
+    const cli = await resolveOpenCodeCli();
+    return { client: new OpenCodeAgentClient(cli), cli };
   }
   const cli = await resolveClaudeCli();
   return { client: new ClaudeAgentClient(cli), cli };
@@ -309,7 +325,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #compactionTimers = new Map<string, NodeJS.Timeout>();
   #status: AgentStatus = structuredClone(INITIAL_STATUS);
   readonly #clients = new Map<AgentProvider, AgentClient>();
-  readonly #cli = new Map<AgentProvider, CodexCliInfo | ClaudeCliInfo>();
+  readonly #cli = new Map<AgentProvider, EngineCliInfo>();
   readonly #accounts = new Map<AgentProvider, AccountReadResult["account"]>();
   readonly #providerStarts = new Map<AgentProvider, Promise<void>>();
   #preferredProvider: AgentProvider;
@@ -427,12 +443,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     let bot = await this.#store.createBot();
     if (this.#botDefaults) {
       bot = await this.#store.updateBot({ botId: bot.id, ...this.#botDefaults });
-    } else if (this.#providerForNewBot() === "claude") {
-      bot = await this.#store.updateBot({
-        botId: bot.id,
-        model: "claude-opus-5",
-        reasoningEffort: "high",
-      });
+    } else {
+      const provider = this.#providerForNewBot();
+      if (provider !== "codex") {
+        const model = this.#defaultModelFor(provider);
+        bot = await this.#store.updateBot({
+          botId: bot.id,
+          model,
+          reasoningEffort:
+            this.#models.find((option) => option.id === model)?.defaultReasoningEffort ?? "high",
+        });
+      }
     }
     this.#emit({ type: "bots-changed", bots: this.#store.list() });
     return bot;
@@ -445,8 +466,16 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         (candidate) => candidate.id === provider && candidate.state === "available",
       ) ?? false;
     if (ready(this.#preferredProvider)) return this.#preferredProvider;
-    const other: AgentProvider = this.#preferredProvider === "claude" ? "codex" : "claude";
-    return ready(other) ? other : this.#preferredProvider;
+    return AGENT_PROVIDERS.find(ready) ?? this.#preferredProvider;
+  }
+
+  /** The model a new bot on this engine starts with when nothing else says. */
+  #defaultModelFor(provider: AgentProvider): BotSummary["model"] {
+    if (provider === "claude") return "claude-opus-5";
+    if (provider === "codex") return DEFAULT_AGENT_MODEL;
+    const first = this.#models.find((model) => providerForModel(model.id) === "opencode");
+    if (!first) throw new Error("OpenCode has no model to use yet. Run `opencode auth login`.");
+    return first.id;
   }
 
   /**
@@ -473,10 +502,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const provider = profile.model
       ? providerForModel(profile.model)
       : (engine ?? this.#providerForNewBot());
-    const model =
-      profile.model ??
-      defaults?.model ??
-      (provider === "claude" ? "claude-opus-5" : DEFAULT_AGENT_MODEL);
+    const model = profile.model ?? defaults?.model ?? this.#defaultModelFor(provider);
     const reasoningEffort =
       defaults?.reasoningEffort ??
       this.#models.find((option) => option.id === model)?.defaultReasoningEffort ??
@@ -588,7 +614,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#stopping = false;
     await Promise.all([this.#store.initialize(), this.#mailbox.initialize()]);
     this.#initialized = true;
-    await this.#connect("starting", ["codex", "claude"]);
+    await this.#connect("starting", AGENT_PROVIDERS);
   }
 
   async setPreferredProvider(provider: AgentProvider): Promise<void> {
@@ -599,10 +625,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (!this.#clients.has(provider) || !account) return;
     this.#setStatus({
       cliVersion: this.#cli.get(provider)?.version ?? null,
-      auth:
-        provider === "codex"
-          ? { kind: "chatgpt", email: account.email ?? null }
-          : { kind: "claude", email: account.email ?? null },
+      auth: authFor(provider, account.email ?? null),
     });
   }
 
@@ -688,7 +711,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         bot,
         client,
         "thread/read",
-        { threadId: bot.threadId, includeTurns: true },
+        // OpenCode keeps its conversations per folder, so it is told which one.
+        { threadId: bot.threadId, includeTurns: true, cwd: bot.workspacePath },
       );
       const fromThread = snapshotFromThread(botId, response.thread, (deliveryId) =>
         this.#mailbox.getDelivery(deliveryId),
@@ -883,13 +907,25 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         email: this.#accounts.get(provider)?.email ?? null,
       });
     }
+    // Several engines can be looked for at the same time. Each look only speaks for the
+    // engines it was asked about, so one never writes an older answer over another's.
+    const live = (): AgentProviderStatus[] => {
+      const current = structuredClone(this.#status.providers ?? INITIAL_STATUS.providers ?? []);
+      for (const provider of requestedProviders) {
+        const mine = providerStatuses.find((status) => status.id === provider);
+        if (!mine) continue;
+        const { id: _id, ...patch } = mine;
+        setProviderStatus(current, provider, patch);
+      }
+      return current;
+    };
     this.#setStatus(
       hadClients
-        ? { providers: providerStatuses }
+        ? { providers: live() }
         : {
             phase,
             auth: { kind: "unknown" },
-            providers: providerStatuses,
+            providers: live(),
             capabilities: { ...this.#status.capabilities, chat: "unavailable" },
             message:
               phase === "starting" ? "Starting local agent CLI…" : "Restarting local agent CLI…",
@@ -900,7 +936,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     for (const provider of requestedProviders) {
       if (this.#clients.has(provider)) continue;
       let client: AgentClient | null = null;
-      let cli: CodexCliInfo | ClaudeCliInfo | null = null;
+      let cli: EngineCliInfo | null = null;
       try {
         ({ client, cli } = await this.#createClient(provider, this.#requestTimeoutMs));
         this.#bindClient(client);
@@ -914,10 +950,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           refreshToken: false,
         });
         if (!account.account) {
-          const message =
-            provider === "codex"
-              ? "Run `codex login` to use Codex."
-              : "Run `claude auth login` to use Claude.";
+          const message = SIGN_IN_HINTS[provider];
           setProviderStatus(providerStatuses, provider, {
             state: "sign-in-required",
             version: cli.version,
@@ -954,7 +987,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         phase: "blocked",
         cliVersion: null,
         auth: { kind: "unknown" },
-        providers: providerStatuses,
+        providers: live(),
         capabilities: { ...this.#status.capabilities, chat: "unavailable" },
         message: failures.join(" "),
       });
@@ -964,9 +997,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#refreshModelCatalog();
     const primaryProvider: AgentProvider = this.#clients.has(this.#preferredProvider)
       ? this.#preferredProvider
-      : this.#clients.has("codex")
-        ? "codex"
-        : "claude";
+      : (AGENT_PROVIDERS.find((provider) => this.#clients.has(provider)) ?? "codex");
     const primaryAccount = this.#accounts.get(primaryProvider);
     const codexClient = this.#clients.get("codex");
     const computerUse = codexClient ? await this.#probeComputerUse(codexClient) : "unavailable";
@@ -974,11 +1005,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#setStatus({
       phase: "ready",
       cliVersion: this.#cli.get(primaryProvider)?.version ?? null,
-      auth:
-        primaryProvider === "codex"
-          ? { kind: "chatgpt", email: primaryAccount?.email ?? null }
-          : { kind: "claude", email: primaryAccount?.email ?? null },
-      providers: providerStatuses,
+      auth: authFor(primaryProvider, primaryAccount?.email ?? null),
+      providers: live(),
       capabilities: { chat: "ready", browser: "ready", computerUse },
       message: null,
     });
@@ -1691,13 +1719,34 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
 
   async #refreshModelCatalog(): Promise<void> {
     const discovered: AgentModelOption[] = [];
+    const openCodeModels: AgentModelOption[] = [];
     for (const client of this.#clients.values()) {
       try {
         const response = await client.request<ModelListResponse>(
           "model/list",
           { limit: 100, includeHidden: false },
-          5_000,
+          client.provider === "opencode" ? 30_000 : 5_000,
         );
+        if (client.provider === "opencode") {
+          // OpenCode's models are whatever the person has set up there, so its own list
+          // is the only list: there is nothing built in to fall back on.
+          for (const item of response.data) {
+            if (!isOpenCodeModel(item.model)) continue;
+            const efforts = (item.supportedReasoningEfforts ?? [])
+              .map((entry) => entry.reasoningEffort)
+              .filter(isReasoningEffort);
+            openCodeModels.push({
+              id: item.model,
+              name: cleanModelName(item.displayName, item.model),
+              description: "",
+              defaultReasoningEffort: efforts.includes("high") ? "high" : (efforts[0] ?? "medium"),
+              supportedReasoningEfforts: efforts,
+            });
+          }
+          if (openCodeModels.length) this.#listedProviders.add("opencode");
+          else this.#listedProviders.delete("opencode");
+          continue;
+        }
         const serverModels = new Map(
           response.data
             .filter((item) => !item.hidden && typeof item.model === "string")
@@ -1735,7 +1784,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       }
     }
     const discoveredById = new Map(discovered.map((model) => [model.id, model]));
-    this.#models = FALLBACK_MODELS.map((fallback) => discoveredById.get(fallback.id) ?? fallback);
+    this.#models = [
+      ...FALLBACK_MODELS.map((fallback) => discoveredById.get(fallback.id) ?? fallback),
+      ...openCodeModels,
+    ];
   }
 
   async #reconcileUnresolvedDeliveries(): Promise<void> {
@@ -1752,6 +1804,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           const response = await client.request<ThreadResponse>("thread/read", {
             threadId: bot.threadId,
             includeTurns: true,
+            cwd: bot.workspacePath,
           });
           const turn = response.thread.turns?.find(
             (candidate) =>
@@ -2402,7 +2455,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   #sessionAccess(bot: BotSummary): Record<string, unknown> {
-    if (providerForBot(bot) === "claude") return this.#claudeAccess(bot.access);
+    if (providerForBot(bot) !== "codex") return this.#markasAccess(bot.access);
     return bot.access === "full"
       ? { approvalPolicy: "never", sandbox: "danger-full-access" }
       : { approvalPolicy: "untrusted", sandbox: "workspace-write" };
@@ -2419,7 +2472,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     level: AccessLevel,
     standing: StandingGrant[] = [],
   ): Record<string, unknown> {
-    if (providerForBot(bot) === "claude") return this.#claudeAccess(level, standing);
+    if (providerForBot(bot) !== "codex") return this.#markasAccess(level, standing);
     if (level === "full") {
       return { approvalPolicy: "never", sandboxPolicy: { type: "dangerFullAccess" } };
     }
@@ -2435,7 +2488,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     };
   }
 
-  #claudeAccess(level: AccessLevel, standing: StandingGrant[] = []): Record<string, unknown> {
+  /** For the engines whose tool calls Markas judges itself: Claude Code and OpenCode. */
+  #markasAccess(level: AccessLevel, standing: StandingGrant[] = []): Record<string, unknown> {
     return { markasAccess: { level, protectedRoots: [this.#store.dataRoot], standing } };
   }
 
@@ -2761,7 +2815,25 @@ function cleanModelName(value: string | undefined, fallback: string): string {
 }
 
 function providerForModel(model: BotSummary["model"]): AgentProvider {
-  return isClaudeModel(model) ? "claude" : "codex";
+  return providerOfModel(model);
+}
+
+const PROVIDER_LABELS: Record<AgentProvider, string> = {
+  codex: "Codex",
+  claude: "Claude",
+  opencode: "OpenCode",
+};
+
+const SIGN_IN_HINTS: Record<AgentProvider, string> = {
+  codex: "Run `codex login` to use Codex.",
+  claude: "Run `claude auth login` to use Claude.",
+  opencode: "Run `opencode auth login` to give OpenCode a model to use.",
+};
+
+function authFor(provider: AgentProvider, email: string | null): AgentStatus["auth"] {
+  if (provider === "codex") return { kind: "chatgpt", email };
+  if (provider === "claude") return { kind: "claude", email };
+  return { kind: "opencode", email: null };
 }
 
 function providerForBot(bot: BotSummary): AgentProvider {
@@ -2769,7 +2841,7 @@ function providerForBot(bot: BotSummary): AgentProvider {
 }
 
 function providerLabel(provider: AgentProvider): string {
-  return provider === "claude" ? "Claude" : "Codex";
+  return PROVIDER_LABELS[provider];
 }
 
 function setProviderStatus(

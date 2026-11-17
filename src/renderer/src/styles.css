@@ -2227,6 +2227,11 @@ textarea {
   fill: #f2f2f2;
 }
 
+.provider-model-mark-opencode {
+  fill: #c9c9c9;
+  fill-rule: evenodd;
+}
+
 .provider-model-chevron {
   width: 13px;
   height: 13px;

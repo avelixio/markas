@@ -4,7 +4,7 @@ import {
   type AgentProviderId,
   type AgentStatus,
   type BotSummary,
-  isClaudeModel,
+  providerOfModel,
 } from "../shared/ipc";
 import type { HostMethod } from "./methods";
 import { isObject } from "./parsers";
@@ -19,7 +19,7 @@ export interface FuelContext {
   now?: () => Date;
 }
 
-const ENGINES: AgentProviderId[] = ["claude", "codex"];
+const ENGINES: AgentProviderId[] = ["claude", "codex", "opencode"];
 
 /** A day on this computer's clock, as YYYY-MM-DD. */
 function localDay(date: Date): string {
@@ -42,8 +42,7 @@ export function createFuelMethods(context: FuelContext): Record<string, HostMeth
       // The period is whole days: today and the days before it.
       const first = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1));
       const bots = context.bots();
-      const engineOf = (bot: BotSummary): AgentProviderId =>
-        isClaudeModel(bot.model) ? "claude" : "codex";
+      const engineOf = (bot: BotSummary): AgentProviderId => providerOfModel(bot.model);
 
       const perDay = new Map<string, number>();
       for (let offset = 0; offset < days; offset += 1) {

@@ -18,6 +18,14 @@ export interface ClaudeCliInfo {
   version: string;
 }
 
+export interface OpenCodeCliInfo {
+  executable: string;
+  version: string;
+}
+
+/** The engine programs Markas looks for, by the name they are started with. */
+export type CliCommand = "codex" | "claude" | "opencode";
+
 export class CodexCliError extends Error {
   constructor(
     message: string,
@@ -29,10 +37,10 @@ export class CodexCliError extends Error {
 }
 
 /** Programs the person pointed Markas at. They are looked at before the usual places. */
-const preferredPaths = new Map<"codex" | "claude", string>();
+const preferredPaths = new Map<CliCommand, string>();
 
 /** Makes detection try this program first. Null forgets it. */
-export function preferCliPath(command: "codex" | "claude", path: string | null): void {
+export function preferCliPath(command: CliCommand, path: string | null): void {
   if (path?.trim()) preferredPaths.set(command, path.trim());
   else preferredPaths.delete(command);
 }
@@ -108,6 +116,42 @@ export async function resolveClaudeCli(): Promise<ClaudeCliInfo> {
   );
 }
 
+export async function resolveOpenCodeCli(): Promise<OpenCodeCliInfo> {
+  const candidates = await collectCandidates("opencode", process.env.MARKAS_OPENCODE_PATH);
+  let foundCandidate = false;
+
+  for (const candidate of candidates) {
+    if (!(await isExecutable(candidate))) continue;
+    foundCandidate = true;
+
+    try {
+      const stdout = await readCliVersion(candidate);
+      return { executable: candidate, version: parseOpenCodeVersion(stdout) };
+    } catch {
+      // Try the next executable candidate.
+    }
+  }
+
+  if (foundCandidate) {
+    throw new CodexCliError(
+      "OpenCode was found but could not be started. Run `opencode --version` in a new terminal.",
+      "invalid",
+    );
+  }
+
+  throw new CodexCliError(
+    "OpenCode was not found. Install OpenCode, run `opencode auth login`, then restart Markas.",
+    "missing",
+  );
+}
+
+/** OpenCode prints its version as a bare number, sometimes with a pre-release tag. */
+export function parseOpenCodeVersion(output: string): string {
+  const match = output.trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-+][\w.-]+)?$/m);
+  if (!match) throw new CodexCliError("Unable to read the OpenCode version.", "invalid");
+  return `${Number(match[1])}.${Number(match[2])}.${Number(match[3])}`;
+}
+
 export function parseCodexVersion(output: string): string {
   const match = output.match(/(?:codex-cli\s+)?(\d+)\.(\d+)\.(\d+)/i);
   if (!match) throw new CodexCliError("Unable to read the Codex CLI version.", "invalid");
@@ -130,7 +174,7 @@ function isMinimumVersion(version: string): boolean {
 }
 
 async function collectCandidates(
-  command: "codex" | "claude",
+  command: CliCommand,
   configuredPath: string | undefined,
 ): Promise<string[]> {
   const candidates: string[] = [];
@@ -172,7 +216,7 @@ async function collectCandidates(
 }
 
 export function windowsFallbackPaths(
-  command: "codex" | "claude",
+  command: CliCommand,
   userHome = homedir(),
   environment: NodeJS.ProcessEnv = process.env,
 ): string[] {
@@ -185,6 +229,9 @@ export function windowsFallbackPaths(
   }
   if (command === "claude" && localAppData) {
     paths.push(win32.join(localAppData, "Microsoft", "WinGet", "Links", "claude.exe"));
+  }
+  if (command === "opencode") {
+    paths.push(win32.join(userHome, ".opencode", "bin", "opencode.exe"));
   }
   if (appData) paths.push(win32.join(appData, "npm", `${command}.cmd`));
   paths.push(
@@ -202,9 +249,10 @@ export function windowsFallbackPaths(
   return paths;
 }
 
-function posixFallbackPaths(command: "codex" | "claude"): string[] {
+function posixFallbackPaths(command: CliCommand): string[] {
   const paths = [join(homedir(), ".local", "bin", command)];
   if (command === "claude") paths.push(join(homedir(), ".claude", "local", "claude"));
+  if (command === "opencode") paths.push(join(homedir(), ".opencode", "bin", "opencode"));
   paths.push(`/opt/homebrew/bin/${command}`, `/usr/local/bin/${command}`);
   return paths;
 }

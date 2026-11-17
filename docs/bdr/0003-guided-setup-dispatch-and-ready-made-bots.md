@@ -14,6 +14,7 @@ After setup the person landed on an empty "To:" field with no guidance.
 
 1. Setup is full screen, one step per screen, in seven steps: language, connect engines, default model, consent, meet Dispatch, describe or pick a bot, review and create.
 Markas supports two engines, Claude Code and Codex, and shows no others.
+Since ADR 0015 there is a third, OpenCode, at the owner's request; no others are shown.
 2. Every engine in setup has an action for its state: install, sign in, open the login again while Markas waits, or fix.
 Continue unlocks once one engine is signed in.
 3. A default-model step shows the engines on the left, their models on the right, with nothing else.

@@ -26,11 +26,14 @@ You will get an answer within a week.
 - A login is typed only into the exact website it was saved for.
 - What bots and people decide is written to an append-only Logbook, without secret values.
 
-The decisions behind this are in [docs/adr](docs/adr), mainly 0002, 0006, 0007, 0008 and 0014.
+The decisions behind this are in [docs/adr](docs/adr), mainly 0002, 0006, 0007, 0008, 0014 and 0015.
 
 ## Known limits
 
 - The packages are not signed with a paid certificate yet.
 - A bot with full access can change and delete files your account can; give that level only to work you trust.
-- Each bot runs on an engine (Claude Code or Codex) that you installed and signed in to; what that engine sends to its provider is governed by that provider.
-- A bot on Claude Code or Codex also loads the settings of your own engine account, such as its instructions, skills and connected tools.
+- Each bot runs on an engine (Claude Code, Codex or OpenCode) that you installed and signed in to; what that engine sends to its provider is governed by that provider.
+- A bot also loads the settings of your own engine account, such as its instructions, skills and connected tools.
+- For a bot on OpenCode below full access, Markas tells OpenCode to ask about every tool call and judges each one itself (ADR 0015).
+This rests on how OpenCode 1.14.20 reads its settings; it was checked against that version, and with a stand-in for a full turn.
+- Markas's tools reach a bot on OpenCode through a server on 127.0.0.1 that needs a secret made for that one conversation.

@@ -131,7 +131,7 @@ export const id: Record<MessageKey, string> = {
   "optimizer.alwaysOn": "Selalu aktif",
   "optimizer.compact.title": "Pemadatan otomatis",
   "optimizer.compact.body":
-    "Saat percakapan mendekati batas yang bisa ditampung model, percakapan diringkas lalu bot melanjutkan. Claude Code meringkas percakapannya sendiri dan Markas menghitung hasil hematnya; untuk Codex, Markas meminta peringkasan pada titik yang Anda pilih.",
+    "Saat percakapan mendekati batas yang bisa ditampung model, percakapan diringkas lalu bot melanjutkan. Claude Code dan OpenCode meringkas percakapannya sendiri. Markas menghitung hasil hematnya untuk Claude Code; OpenCode tidak melaporkannya. Untuk Codex, Markas meminta peringkasan pada titik yang Anda pilih.",
   "optimizer.compact.at": "Ringkas percakapan Codex saat sudah",
   "optimizer.compact.full": "{percent}% penuh",
   "optimizer.compact.events.one": "{count} kali diringkas",
@@ -816,7 +816,8 @@ export const id: Record<MessageKey, string> = {
   "engine.connecting": "Menyambung ke mesin…",
   "engine.starting": "Menjalankan mesin…",
   "engine.setup.title": "Mesin perlu disiapkan",
-  "engine.setup.body": "Pasang dan masuk ke Claude Code atau Codex, lalu jalankan ulang Markas.",
+  "engine.setup.body":
+    "Pasang dan masuk ke Claude Code, Codex, atau OpenCode, lalu jalankan ulang Markas.",
   "engine.setup.guide": "Buka Sambungan",
   "prompt.label": "Pertanyaan bot",
   "prompt.bot": "Bot",

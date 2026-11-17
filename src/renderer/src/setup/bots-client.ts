@@ -48,6 +48,8 @@ export type DispatchTurn =
       /** limit: the engine's plan is used up. unavailable: Dispatch could not start. failed: this turn broke. */
       reason: "limit" | "unavailable" | "failed";
       message: string;
+      /** The engine Dispatch was running on when it went down, when there was one. */
+      engine: EngineId | null;
       /** Another engine Dispatch could run on instead, when there is one. */
       otherEngine: EngineId | null;
       /** What was said so far is never lost. */

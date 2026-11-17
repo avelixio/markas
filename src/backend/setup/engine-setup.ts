@@ -22,10 +22,11 @@ import {
   installPlan,
   signInArgs,
   signInCommand,
+  signsInFromTerminal,
 } from "./engine-install";
 import { type ProcessRunner, ProcessStartError } from "./process-runner";
 
-export const ENGINES: readonly AgentProviderId[] = ["claude", "codex"];
+export const ENGINES: readonly AgentProviderId[] = ["claude", "codex", "opencode"];
 
 /** How long setup waits for the person to finish signing in before it gives up. */
 export const SIGN_IN_TIMEOUT_MS = 5 * 60_000;
@@ -254,6 +255,14 @@ export class EngineSetup {
         null,
       );
     }
+    if (signsInFromTerminal(engine)) {
+      return this.#signInState(
+        engine,
+        "failed",
+        `${ENGINE_NAMES[engine]} signs in from a terminal, where it asks which model service to use. Run \`${command}\` there, then check again here.`,
+        null,
+      );
+    }
     let executable: string;
     try {
       executable = await this.#options.probe.executable(engine);
@@ -419,10 +428,13 @@ export function toSetupStatus(
  * A bare number is not enough: another program must not pass for the engine.
  */
 export function readEngineVersion(engine: AgentProviderId, printed: string): string | null {
+  // OpenCode prints nothing but the number, so a line that is only a version is all there is to go on.
   const pattern =
     engine === "claude"
       ? /(\d+\.\d+\.\d+)\s*\(Claude Code\)/i
-      : /\bcodex(?:-cli)?\s+v?(\d+\.\d+\.\d+)/i;
+      : engine === "codex"
+        ? /\bcodex(?:-cli)?\s+v?(\d+\.\d+\.\d+)/i
+        : /^\s*v?(\d+\.\d+\.\d+)(?:[-+][\w.-]+)?\s*$/;
   return printed.match(pattern)?.[1] ?? null;
 }
 

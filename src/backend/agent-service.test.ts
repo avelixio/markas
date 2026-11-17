@@ -15,6 +15,7 @@ let logPath: string;
 let service: AgentService | null = null;
 const originalCodexPath = process.env.MARKAS_CODEX_PATH;
 const originalClaudePath = process.env.MARKAS_CLAUDE_PATH;
+const originalOpenCodePath = process.env.MARKAS_OPENCODE_PATH;
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "markas-agent-test-"));
@@ -22,6 +23,8 @@ beforeEach(async () => {
   process.env.MARKAS_FAKE_CODEX_LOG = logPath;
   process.env.MARKAS_CODEX_PATH = await createFakeCodex(root);
   process.env.MARKAS_CLAUDE_PATH = join(root, "missing-claude");
+  // Whatever is installed on the computer running the tests must not take part in them.
+  process.env.MARKAS_OPENCODE_PATH = join(root, "missing-opencode");
 });
 
 afterEach(async () => {
@@ -31,6 +34,8 @@ afterEach(async () => {
   else process.env.MARKAS_CODEX_PATH = originalCodexPath;
   if (originalClaudePath === undefined) delete process.env.MARKAS_CLAUDE_PATH;
   else process.env.MARKAS_CLAUDE_PATH = originalClaudePath;
+  if (originalOpenCodePath === undefined) delete process.env.MARKAS_OPENCODE_PATH;
+  else process.env.MARKAS_OPENCODE_PATH = originalOpenCodePath;
   delete process.env.MARKAS_FAKE_CODEX_LOG;
   delete process.env.MARKAS_FAKE_AGENT_TOOL;
   delete process.env.MARKAS_FAKE_AGENT_TOOL_PATHS;
@@ -88,6 +93,7 @@ describe.sequential("AgentService", () => {
           email: "codex@example.com",
         },
         { id: "claude", state: "not-installed", version: null },
+        { id: "opencode", state: "not-installed", version: null },
       ],
       capabilities: { chat: "ready", browser: "ready", computerUse: "ready" },
     });
@@ -159,6 +165,7 @@ describe.sequential("AgentService", () => {
           version: "2.1.231",
           email: "claude@example.com",
         },
+        { id: "opencode", state: "not-installed", version: null },
       ],
     });
     await service.setPreferredProvider("codex");

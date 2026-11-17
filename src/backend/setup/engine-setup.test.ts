@@ -191,9 +191,13 @@ describe("engine status", () => {
     });
   });
 
-  it("reports both engines", async () => {
+  it("reports every engine", async () => {
     const { setup } = harness(new FakeRunner(), [found("claude", "not-installed")]);
-    expect((await setup.statuses()).map((status) => status.engine)).toEqual(["claude", "codex"]);
+    expect((await setup.statuses()).map((status) => status.engine)).toEqual([
+      "claude",
+      "codex",
+      "opencode",
+    ]);
   });
 });
 
@@ -472,6 +476,9 @@ describe("pointing Markas at an existing program", () => {
     expect(readEngineVersion("claude", "codex-cli 0.150.0")).toBeNull();
     expect(readEngineVersion("codex", "codex-cli 0.150.0")).toBe("0.150.0");
     expect(readEngineVersion("codex", "2.1.231 (Claude Code)")).toBeNull();
+    expect(readEngineVersion("opencode", "1.14.20\n")).toBe("1.14.20");
+    expect(readEngineVersion("opencode", "codex-cli 0.150.0")).toBeNull();
+    expect(readEngineVersion("opencode", "2.1.231 (Claude Code)")).toBeNull();
   });
 });
 

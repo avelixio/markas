@@ -1,7 +1,7 @@
 # Markas
 
 Markas is a headquarters for your AI teammates.
-It runs on your own computer, drives bots through the Claude Code and Codex tools you already use, and gives you one place to talk to them, queue work and see what each one is doing.
+It runs on your own computer, drives bots through the Claude Code, Codex and OpenCode tools you already use, and gives you one place to talk to them, queue work and see what each one is doing.
 
 > [!WARNING]
 > Markas is an early preview (version 0.1.0).
@@ -36,6 +36,7 @@ Its narration is read by [Kitten TTS](https://github.com/KittenML/KittenTTS) by 
 - A browser for bots, held to the sites each bot is allowed, that hands over to you for a step only you can do.
 - Keep logins in the Keyring: each key has its own name and one exact website, so two sites under one company domain never share a login.
 - Switchboard (Preview): see which engines are installed and signed in.
+- OpenCode as an engine (new, less tried than the other two): a bot can run on any model your OpenCode has.
 - Optimizer: smaller conversations and a count of the tokens saved.
 - Logbook: a record of what was done, by whom, and how it ended.
 - Notifications for what waits on you, and Undo for a deleted bot, which can be restored for 30 days.
@@ -47,7 +48,7 @@ The full list, with what is finished and what is not, is in [`docs/features.md`]
 
 Everything stays on your computer.
 There is no Markas account, cloud backend or telemetry.
-Your bots still reach the services their engines use, such as Anthropic and OpenAI.
+Your bots still reach the services their engines use, such as Anthropic and OpenAI, or whichever model services you set up in OpenCode.
 
 ## Where it is going
 
@@ -73,7 +74,7 @@ The interface designs live in [`design/`](design).
 | Mac with an Intel chip | `Markas-<version>-mac-x64.dmg` |
 | Linux (64-bit) | `Markas-<version>-linux-x86_64.AppImage` |
 
-2. Install and sign in to at least one engine: Claude Code or Codex.
+2. Install and sign in to at least one engine: Claude Code, Codex or OpenCode.
 3. Open Markas.
 
 The packages are not signed with a paid certificate yet, so each system asks once before it opens Markas:
@@ -110,7 +111,7 @@ On macOS and Linux run `chmod +x ./markas` first.
 You can also run Markas straight from this repository, with nothing downloaded from Releases.
 This works the same on macOS, Linux and Windows, and takes about two minutes.
 
-You need [Git](https://git-scm.com), [Bun](https://bun.sh) 1.3.11 or newer, and Claude Code or Codex installed and signed in.
+You need [Git](https://git-scm.com), [Bun](https://bun.sh) 1.3.11 or newer, and Claude Code, Codex or OpenCode installed and signed in.
 
 1. Install Bun, if you do not have it.
 It goes into your own user folder and needs no administrator password.

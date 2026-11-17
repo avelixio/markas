@@ -6,7 +6,7 @@ import type {
   AgentProviderStatus,
   AgentStatus,
 } from "../../../shared/ipc";
-import { isClaudeModel } from "../../../shared/ipc";
+import { providerOfModel } from "../../../shared/ipc";
 import { t } from "../i18n";
 
 interface ProviderModelPickerProps {
@@ -21,10 +21,22 @@ interface ProviderModelPickerProps {
   onChange: (model: AgentModelId) => void;
 }
 
-const PROVIDERS: AgentProviderId[] = ["claude", "codex"];
-const DEFAULT_MODELS: Record<AgentProviderId, AgentModelId> = {
+const PROVIDERS: AgentProviderId[] = ["claude", "codex", "opencode"];
+/** The model marked as the usual choice. OpenCode's models are the person's own, so it has none. */
+const DEFAULT_MODELS: Record<AgentProviderId, AgentModelId | null> = {
   claude: "claude-opus-5",
   codex: "gpt-5.6-luna",
+  opencode: null,
+};
+const PROVIDER_NAMES: Record<AgentProviderId, string> = {
+  claude: "Claude",
+  codex: "Codex",
+  opencode: "OpenCode",
+};
+const ENGINE_PROGRAMS: Record<AgentProviderId, string> = {
+  claude: "Claude Code",
+  codex: "Codex CLI",
+  opencode: "OpenCode",
 };
 
 export function ProviderModelPicker(props: ProviderModelPickerProps) {
@@ -307,7 +319,7 @@ function providerAvailability(
 
 function providerSummary(provider: AgentProviderId, status: AgentProviderStatus): string {
   if (status.state === "available") {
-    const engine = provider === "claude" ? "Claude Code" : "Codex CLI";
+    const engine = ENGINE_PROGRAMS[provider];
     return status.version ? `${status.version} (${engine})` : t("engine.ready", { name: engine });
   }
   // A message from the host is shown as the host wrote it.
@@ -318,11 +330,11 @@ function providerSummary(provider: AgentProviderId, status: AgentProviderStatus)
 }
 
 function providerName(provider: AgentProviderId): string {
-  return provider === "claude" ? "Claude" : "Codex";
+  return PROVIDER_NAMES[provider];
 }
 
 function providerForModel(model: AgentModelId): AgentProviderId {
-  return isClaudeModel(model) ? "claude" : "codex";
+  return providerOfModel(model);
 }
 
 function displayModelName(name: string | undefined, fallback: string): string {
@@ -330,6 +342,27 @@ function displayModelName(name: string | undefined, fallback: string): string {
 }
 
 function ProviderMark(props: { provider: AgentProviderId; large?: boolean }) {
+  return (
+    <Show
+      when={props.provider !== "opencode"}
+      fallback={
+        // Not OpenCode's own logo: a plain frame with a cursor, for "a program in a terminal".
+        <svg
+          class="provider-model-mark provider-model-mark-opencode"
+          classList={{ "provider-model-mark-large": props.large }}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2 3v12h12V6H6Zm3 3h6v6H9V9Z" />
+        </svg>
+      }
+    >
+      <ClaudeOrCodexMark provider={props.provider} large={props.large} />
+    </Show>
+  );
+}
+
+function ClaudeOrCodexMark(props: { provider: AgentProviderId; large?: boolean }) {
   return (
     <Show
       when={props.provider === "claude"}

@@ -12,7 +12,7 @@ import {
 import type { RoundsScheduler } from "../backend/rounds/scheduler";
 import { describeStanding } from "../backend/rounds/standing";
 import type { AccessLevel } from "../shared/access";
-import type { AgentEvent } from "../shared/ipc";
+import type { AgentEvent, AgentProviderId } from "../shared/ipc";
 import type { HostMethod } from "./methods";
 import { isObject, requireString } from "./parsers";
 
@@ -32,7 +32,7 @@ export interface RoundSummary extends Round {
 /** What the round form needs to know about a round's bot. */
 export interface RoundBot {
   access: AccessLevel;
-  engine: "claude" | "codex";
+  engine: AgentProviderId;
 }
 
 export function createRoundsMethods(
@@ -49,7 +49,8 @@ export function createRoundsMethods(
       nextRunAt: store.nextRunAt(round, new Date()),
       lastRun,
       waitingOn: lastRun ? waitingOn(lastRun) : null,
-      standingApplies: findBot(round.botId)?.engine === "claude",
+      // Standing permissions work where Markas judges every tool call itself.
+      standingApplies: ["claude", "opencode"].includes(findBot(round.botId)?.engine ?? ""),
     };
   };
   const requireBot = (botId: string): RoundBot => {

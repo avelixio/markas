@@ -37,6 +37,7 @@ export const idBots: Record<keyof typeof enBots, string> = {
   "dispatch.draft.change": "Ubah sesuatu",
   "dispatch.draft.review": "Tinjau dan buat",
 
+  "dispatch.down.theEngine": "Mesin",
   "dispatch.down.limit.title": "Dispatch tidak bisa mulai: {engine} mencapai batas pemakaian",
   "dispatch.down.unavailable.title": "Dispatch tidak bisa mulai",
   "dispatch.down.body": "Anda tetap bisa membuat bot tanpa Dispatch.",

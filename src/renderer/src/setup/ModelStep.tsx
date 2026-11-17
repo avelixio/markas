@@ -151,7 +151,10 @@ export function ModelStep(props: ModelStepProps) {
                   disabled={!isReady()}
                   onClick={() => setEngine(id)}
                 >
-                  <Icon name={id === "claude" ? "sparkle" : "terminal"} size={18} />
+                  <Icon
+                    name={id === "claude" ? "sparkle" : id === "codex" ? "terminal" : "panel"}
+                    size={18}
+                  />
                 </button>
               );
             }}

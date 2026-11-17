@@ -33,6 +33,7 @@ export const enBots = {
   "dispatch.draft.change": "Change something",
   "dispatch.draft.review": "Review and create",
 
+  "dispatch.down.theEngine": "The engine",
   "dispatch.down.limit.title": "Dispatch could not start: {engine} hit its usage limit",
   "dispatch.down.unavailable.title": "Dispatch could not start",
   "dispatch.down.body": "You can still make the bot without it.",

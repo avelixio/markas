@@ -2,7 +2,7 @@
   "name": "markas",
   "productName": "Markas",
   "version": "0.1.0",
-  "description": "A headquarters for your AI bots: it runs on your own computer and drives them through Claude Code and Codex.",
+  "description": "A headquarters for your AI bots: it runs on your own computer and drives them through Claude Code, Codex and OpenCode.",
   "homepage": "https://github.com/avelixio/markas#readme",
   "repository": {
     "type": "git",

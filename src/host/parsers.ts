@@ -8,6 +8,7 @@ import {
   type CancelQueuedMessageInput,
   type InterruptTurnInput,
   isAgentModel,
+  isAgentProvider,
   isAvatarColor,
   isAvatarShape,
   isMessageReaction,
@@ -22,7 +23,7 @@ import {
 export function parseProvider(input: unknown): AgentProviderId {
   if (!input || typeof input !== "object") throw new Error("Setup input is required.");
   const provider = Reflect.get(input, "preferredProvider");
-  if (provider !== "codex" && provider !== "claude") throw new Error("Unknown provider.");
+  if (!isAgentProvider(provider)) throw new Error("Unknown provider.");
   return provider;
 }
 export function requireString(value: unknown, field: string): string {

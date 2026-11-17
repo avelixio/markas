@@ -77,6 +77,7 @@ export function DispatchStep(props: DispatchStepProps) {
         ok: false,
         reason: "failed",
         message: error instanceof Error ? error.message : String(error),
+        engine: null,
         otherEngine: null,
         messages: messages(),
       };
@@ -262,7 +263,9 @@ export function DispatchStep(props: DispatchStepProps) {
                 title={
                   failure().reason === "limit"
                     ? t("dispatch.down.limit.title", {
-                        engine: engineName(failure().otherEngine === "claude" ? "codex" : "claude"),
+                        engine: failure().engine
+                          ? engineName(failure().engine as EngineId)
+                          : t("dispatch.down.theEngine"),
                       })
                     : t("dispatch.down.unavailable.title")
                 }

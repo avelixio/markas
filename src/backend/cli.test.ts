@@ -8,6 +8,7 @@ import {
   CodexCliError,
   parseClaudeVersion,
   parseCodexVersion,
+  parseOpenCodeVersion,
   resolveClaudeCli,
   resolveCodexCli,
   windowsFallbackPaths,
@@ -42,6 +43,13 @@ describe("Claude CLI version parsing", () => {
 
   it("fails closed on an unknown format", () => {
     expect(() => parseClaudeVersion("Claude development build")).toThrow(CodexCliError);
+  });
+
+  it("reads the bare version OpenCode prints, and nothing that only contains one", () => {
+    expect(parseOpenCodeVersion("1.14.20\r\n")).toBe("1.14.20");
+    expect(parseOpenCodeVersion("v1.15.0-beta.2\n")).toBe("1.15.0");
+    expect(() => parseOpenCodeVersion("codex-cli 0.150.0")).toThrow(CodexCliError);
+    expect(() => parseOpenCodeVersion("")).toThrow(CodexCliError);
   });
 });
 

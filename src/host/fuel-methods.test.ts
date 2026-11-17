@@ -93,6 +93,8 @@ describe("fuel.read", () => {
     expect(report.engines).toEqual([
       { engine: "claude", state: "available", email: "sol@example.com", limits: null, bots: 1 },
       { engine: "codex", state: "sign-in-required", email: null, limits, bots: 1 },
+      // OpenCode reports no plan, and nothing was said about it here.
+      { engine: "opencode", state: "not-started", email: null, limits: null, bots: 0 },
     ]);
   });
 
@@ -104,6 +106,7 @@ describe("fuel.read", () => {
       status: () => status(undefined),
     });
     expect(report.engines.map((engine) => [engine.state, engine.limits])).toEqual([
+      ["not-started", null],
       ["not-started", null],
       ["not-started", null],
     ]);

@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
+  AGENT_PROVIDERS,
   type AgentModelId,
   type AgentProviderId,
   type AgentReasoningEffort,
   isAgentModel,
-  isClaudeModel,
+  isAgentProvider,
   isReasoningEffort,
+  providerOfModel,
   type SaveSetupStateInput,
   SETUP_LANGUAGES,
   SETUP_STEPS,
@@ -80,7 +82,7 @@ export class SetupStore {
       }
       // A default model belongs to one engine. Choosing it also settles which engine is preferred.
       if (next.defaultModel && patch.defaultModel && patch.preferredProvider === undefined) {
-        next.preferredProvider = isClaudeModel(next.defaultModel) ? "claude" : "codex";
+        next.preferredProvider = providerOfModel(next.defaultModel);
       }
       if (patch.completed === true) {
         if (!next.preferredProvider) throw new SetupError("Connect an engine before finishing.");
@@ -152,7 +154,7 @@ function migrate(parsed: unknown): StoredSetup {
   const paths =
     typeof file.enginePaths === "object" && file.enginePaths !== null ? file.enginePaths : {};
   const enginePaths: StoredSetup["enginePaths"] = {};
-  for (const engine of ["claude", "codex"] as const) {
+  for (const engine of AGENT_PROVIDERS) {
     const path = (paths as Record<string, unknown>)[engine];
     if (typeof path === "string" && path) enginePaths[engine] = path;
   }
@@ -211,8 +213,7 @@ function toState(stored: StoredSetup): SetupState {
   };
 }
 
-const isProvider = (value: unknown): value is AgentProviderId =>
-  value === "codex" || value === "claude";
+const isProvider = isAgentProvider;
 const isLanguage = (value: unknown): value is SetupLanguage =>
   SETUP_LANGUAGES.includes(value as SetupLanguage);
 const isStep = (value: unknown): value is SetupStep => SETUP_STEPS.includes(value as SetupStep);

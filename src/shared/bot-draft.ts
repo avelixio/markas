@@ -450,6 +450,8 @@ export type DispatchTurn =
       ok: false;
       reason: "limit" | "unavailable" | "failed";
       message: string;
+      /** The engine Dispatch was running on when it went down, when there was one. */
+      engine: AgentProviderId | null;
       /** Another engine Dispatch could run on instead, when there is one. */
       otherEngine: AgentProviderId | null;
       messages: DispatchMessage[];

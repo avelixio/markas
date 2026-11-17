@@ -21,10 +21,14 @@ export interface InstallStep {
 export const ENGINE_NAMES: Record<AgentProviderId, string> = {
   claude: "Claude Code",
   codex: "Codex",
+  opencode: "OpenCode",
 };
 
-/** The engine's own installer script, as its maker publishes it. Needs no admin rights and no Node.js. */
-const SCRIPTS: Record<AgentProviderId, { posix: string; windows: string }> = {
+/**
+ * The engine's own installer script, as its maker publishes it. Needs no admin rights and no Node.js.
+ * Null where the maker publishes none for that system.
+ */
+const SCRIPTS: Record<AgentProviderId, { posix: string; windows: string | null }> = {
   claude: {
     posix: "curl -fsSL https://claude.ai/install.sh | bash",
     windows: "irm https://claude.ai/install.ps1 | iex",
@@ -33,11 +37,16 @@ const SCRIPTS: Record<AgentProviderId, { posix: string; windows: string }> = {
     posix: "curl -fsSL https://chatgpt.com/codex/install.sh | sh",
     windows: "irm https://chatgpt.com/codex/install.ps1 | iex",
   },
+  opencode: {
+    posix: "curl -fsSL https://opencode.ai/install | bash",
+    windows: null,
+  },
 };
 
 const NPM_PACKAGES: Record<AgentProviderId, string> = {
   claude: "@anthropic-ai/claude-code",
   codex: "@openai/codex",
+  opencode: "opencode-ai",
 };
 
 /**
@@ -49,6 +58,14 @@ export function installPlan(engine: AgentProviderId, platform: DesktopPlatform):
   const script = SCRIPTS[engine];
   const npm = `npm install -g ${NPM_PACKAGES[engine]}`;
   if (platform === "win32") {
+    const viaNpm: InstallStep = {
+      needs: "Node.js and npm",
+      command: "npm.cmd",
+      args: ["install", "-g", NPM_PACKAGES[engine]],
+      manual: npm,
+      shell: "powershell",
+    };
+    if (!script.windows) return [viaNpm];
     return [
       {
         needs: "PowerShell",
@@ -64,13 +81,7 @@ export function installPlan(engine: AgentProviderId, platform: DesktopPlatform):
         manual: script.windows,
         shell: "powershell",
       },
-      {
-        needs: "Node.js and npm",
-        command: "npm.cmd",
-        args: ["install", "-g", NPM_PACKAGES[engine]],
-        manual: npm,
-        shell: "powershell",
-      },
+      viaNpm,
     ];
   }
   return [
@@ -108,12 +119,20 @@ export function installCommand(
 
 /** The command the person can run in a terminal to sign in, instead of the button. */
 export function signInCommand(engine: AgentProviderId): string {
-  return engine === "claude" ? "claude auth login" : "codex login";
+  return engine === "codex" ? "codex login" : `${engine} auth login`;
 }
 
 /** What an engine is started with to open its own sign-in. */
 export function signInArgs(engine: AgentProviderId): string[] {
-  return engine === "claude" ? ["auth", "login"] : ["login"];
+  return engine === "codex" ? ["login"] : ["auth", "login"];
+}
+
+/**
+ * True when the engine's sign-in asks its questions in a terminal, so Markas cannot start it
+ * for the person: OpenCode asks which model service to use and for that service's key.
+ */
+export function signsInFromTerminal(engine: AgentProviderId): boolean {
+  return engine === "opencode";
 }
 
 const NO_INTERNET =

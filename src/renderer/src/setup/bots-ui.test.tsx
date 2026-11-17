@@ -211,7 +211,14 @@ describe("describing a bot to Dispatch", () => {
   it("offers the other engine, a ready-made bot or a form when Dispatch hits its limit", async () => {
     const client = fakeClient();
     client.replies = [
-      { ok: false, reason: "limit", message: "limit", otherEngine: "codex", messages: [] },
+      {
+        ok: false,
+        reason: "limit",
+        message: "limit",
+        engine: "claude",
+        otherEngine: "codex",
+        messages: [],
+      },
     ];
     open(client);
 
@@ -231,6 +238,7 @@ describe("describing a bot to Dispatch", () => {
       {
         ok: false,
         reason: "unavailable",
+        engine: null,
         message: "No engine is signed in.",
         otherEngine: null,
         messages: [],
@@ -250,7 +258,14 @@ describe("describing a bot to Dispatch", () => {
     const client = fakeClient();
     client.replies = [
       { ok: true, messages: [] },
-      { ok: false, reason: "failed", message: "boom", otherEngine: null, messages: [] },
+      {
+        ok: false,
+        reason: "failed",
+        message: "boom",
+        engine: null,
+        otherEngine: null,
+        messages: [],
+      },
     ];
     open(client);
     await screen.findByText(enBots["dispatch.hello"]);

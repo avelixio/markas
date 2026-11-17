@@ -264,7 +264,7 @@ export class DispatchService {
 
   /** The most careful setting each engine has. Dispatch may read nothing and change nothing. */
   #access(engine: AgentProvider, turn: boolean): Record<string, unknown> {
-    if (engine === "claude") {
+    if (engine !== "codex") {
       return { markasAccess: { level: "ask", protectedRoots: [this.#deps.protectedRoot] } };
     }
     return turn
@@ -350,6 +350,7 @@ export class DispatchService {
       ok: false,
       reason,
       message: describe(error),
+      engine: current,
       // Trying again on the same engine is offered for a broken turn; another engine otherwise.
       otherEngine: reason === "failed" ? null : other,
       messages: this.#copy(),

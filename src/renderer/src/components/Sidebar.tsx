@@ -190,7 +190,9 @@ export function Sidebar(props: SidebarProps) {
   });
   const accountEmail = createMemo(() => {
     const auth = props.agentStatus.auth;
-    return auth.kind === "chatgpt" || auth.kind === "claude" ? auth.email : null;
+    return auth.kind === "chatgpt" || auth.kind === "claude" || auth.kind === "opencode"
+      ? auth.email
+      : null;
   });
   const accountName = createMemo(() => accountEmail() ?? "Markas");
   const accountInitials = createMemo(() => {

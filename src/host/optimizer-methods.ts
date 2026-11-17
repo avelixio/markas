@@ -1,5 +1,5 @@
 import type { OptimizerStore } from "../backend/optimizer/optimizer-store";
-import { type BotSummary, isClaudeModel } from "../shared/ipc";
+import { type BotSummary, providerOfModel } from "../shared/ipc";
 import type { BotContext, OptimizerReport, OptimizerSettings } from "../shared/optimizer";
 import type { HostMethod } from "./methods";
 import { isObject } from "./parsers";
@@ -43,7 +43,7 @@ export function createOptimizerMethods(context: OptimizerContext): Record<string
           return {
             botId: bot.id,
             name: bot.name,
-            engine: isClaudeModel(bot.model) ? "claude" : "codex",
+            engine: providerOfModel(bot.model),
             usedTokens: reported?.usedTokens ?? null,
             contextWindow: reported?.contextWindow ?? null,
             compacting: reported?.compacting ?? false,

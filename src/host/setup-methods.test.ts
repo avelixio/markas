@@ -148,6 +148,7 @@ describe("setup methods", () => {
       // No Claude engine exists in this test, and the reason is passed on in plain words.
       { engine: "claude", state: "error", message: "claude is not installed in this test." },
       { engine: "codex", state: "signed-in", version: "0.0.0-fake", email: "fake@example.com" },
+      { engine: "opencode", state: "error", message: "opencode is not installed in this test." },
     ]);
   });
 

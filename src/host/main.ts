@@ -10,7 +10,12 @@ import {
 import { BotCreator } from "../backend/bot-creation";
 import { BotStore } from "../backend/bot-store";
 import type { BrowserService } from "../backend/browser-tools";
-import { preferCliPath, resolveClaudeCli, resolveCodexCli } from "../backend/cli";
+import {
+  preferCliPath,
+  resolveClaudeCli,
+  resolveCodexCli,
+  resolveOpenCodeCli,
+} from "../backend/cli";
 import { DispatchService } from "../backend/dispatch/dispatch-service";
 import { type MasterKeyStore, resolveMasterKeyStore } from "../backend/keyring/key-store";
 import { KeyringStore } from "../backend/keyring/keyring-store";
@@ -27,7 +32,7 @@ import { EngineSetup } from "../backend/setup/engine-setup";
 import { NodeProcessRunner, type ProcessRunner } from "../backend/setup/process-runner";
 import { isRecord } from "../shared/bot-draft";
 import type { AgentProviderId, SetupState } from "../shared/ipc";
-import { isClaudeModel } from "../shared/ipc";
+import { providerOfModel } from "../shared/ipc";
 import { CHARS_PER_TOKEN } from "../shared/optimizer";
 import { AgentInitializationGate } from "./agent-initialization";
 import { createBrowserMethods, createBrowserService } from "./browser-methods";
@@ -216,7 +221,12 @@ export async function startHost(
     probe: {
       check: (engine) => service.checkProvider(engine),
       executable: async (engine) =>
-        (engine === "claude" ? await resolveClaudeCli() : await resolveCodexCli()).executable,
+        (engine === "claude"
+          ? await resolveClaudeCli()
+          : engine === "codex"
+            ? await resolveCodexCli()
+            : await resolveOpenCodeCli()
+        ).executable,
       models: (engine) => service.modelsFor(engine),
       prefer: preferCliPath,
     },
@@ -356,9 +366,7 @@ export async function startHost(
           scheduler,
           (botId) => {
             const bot = findBot(botId);
-            return bot
-              ? { access: bot.access, engine: isClaudeModel(bot.model) ? "claude" : "codex" }
-              : null;
+            return bot ? { access: bot.access, engine: providerOfModel(bot.model) } : null;
           },
           botAway,
         ),
