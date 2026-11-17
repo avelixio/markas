@@ -78,7 +78,13 @@ export function sessionSettings(input: {
     autoupdate: false,
     share: "disabled",
     instructions: [input.instructionsFile],
-    experimental: { mcp_timeout: TOOL_WAIT_MS },
+    experimental: {
+      mcp_timeout: TOOL_WAIT_MS,
+      // Without this a "no" ends the turn on the spot, and the person is left with a reply
+      // cut off mid-sentence. With it the bot hears the "no" and can say what it could not do.
+      // Whatever it tries next is asked about again.
+      continue_loop_on_deny: true,
+    },
     mcp: Object.fromEntries(
       Object.entries(input.tools).map(([name, endpoint]) => [
         name,

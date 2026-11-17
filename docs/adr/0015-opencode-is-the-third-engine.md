@@ -51,6 +51,8 @@ The rules are given twice, for the session and for the `build` agent, because th
 `OPENCODE_PERMISSION` is taken out of the environment for the same reason.
 Below full access `OPENCODE_DISABLE_PROJECT_CONFIG` is set, so settings, tools and plugins in the bot's folder are not loaded: a bot could otherwise write itself permissions there.
 At full access everything is allowed, as for the other engines.
+A "no" does not end the turn: `continue_loop_on_deny` is on, so the bot is told and can say what it could not do.
+Without it OpenCode stops at once, and the person is left with a reply cut off mid-sentence.
 
 ### Markas's own tools go over a local tool server
 
@@ -88,5 +90,10 @@ The context view shows how full the conversation is, but not what fills it.
 - The rules were read from OpenCode 1.14.20.
 A later version that renames a permission is still covered by the rule for everything else, which asks.
 A later version that changes how settings are read could weaken this; the checks in `rules.test.ts` cover Markas's side only.
-- Checked against the real OpenCode: finding it, listing models, opening a session, reading it back, and a refused request ending as a failed turn.
-A full turn with a model answering, a permission question and a Markas tool call was checked against a stand-in only, because no model service on the test computer had credit.
+- Checked against the real OpenCode 1.14.20 with Claude Opus 5 through the person's own Anthropic key:
+the bot's instructions were followed, a Markas tool was called through the tool server, reading a file outside the bot's folder and running a command were each put to the person,
+a "yes" let them happen, a "no" stopped them and the bot said so, and the conversation was read back.
+Finding it, listing models and a request the model service refused were checked as well.
+- `ANTHROPIC_BASE_URL` from the environment is passed on to OpenCode, which expects it to end in `/v1`.
+Claude Code writes it without, so Markas started from inside a Claude Code session sends OpenCode's Anthropic requests to the wrong address and every turn fails with "Not Found".
+Markas leaves the variable as it is, because a person may have set it on purpose; the failed turn says to run `opencode run` to see the reason.

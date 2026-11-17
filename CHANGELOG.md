@@ -6,6 +6,7 @@ What changed in Markas, newest first.
 
 - OpenCode is a third engine: a bot can run on any model your OpenCode has, with the same access levels, Markas tools and bot browser as the other engines.
 - A turn that an engine ends without an answer is shown as failed, with what to check, instead of looking finished.
+- A bot on OpenCode that is told no explains what it could not do, instead of stopping mid-sentence.
 - Checking several engines at once no longer leaves one of them shown as still being checked.
 - The bot browser lives in the Browser panel: it has no window of its own, and once you take a tab over you click, type and scroll on the page inside Markas.
 - The Keyring signs bots in: a saved login is typed into the bot's own tab, on the exact site of the key only.

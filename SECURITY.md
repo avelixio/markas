@@ -35,5 +35,5 @@ The decisions behind this are in [docs/adr](docs/adr), mainly 0002, 0006, 0007, 
 - Each bot runs on an engine (Claude Code, Codex or OpenCode) that you installed and signed in to; what that engine sends to its provider is governed by that provider.
 - A bot also loads the settings of your own engine account, such as its instructions, skills and connected tools.
 - For a bot on OpenCode below full access, Markas tells OpenCode to ask about every tool call and judges each one itself (ADR 0015).
-This rests on how OpenCode 1.14.20 reads its settings; it was checked against that version, and with a stand-in for a full turn.
+This rests on how OpenCode 1.14.20 reads its settings; it was checked against that version with a real model, for a yes and for a no.
 - Markas's tools reach a bot on OpenCode through a server on 127.0.0.1 that needs a secret made for that one conversation.

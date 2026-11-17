@@ -38,7 +38,7 @@ describe("the rules an OpenCode session runs under", () => {
       permission: unknown;
       agent: { build: { permission: unknown } };
       mcp: Record<string, unknown>;
-      experimental: { mcp_timeout: number };
+      experimental: { mcp_timeout: number; continue_loop_on_deny: boolean };
     };
     expect(settings.agent.build.permission).toEqual(settings.permission);
     expect(settings.mcp.markas).toEqual({
@@ -50,6 +50,8 @@ describe("the rules an OpenCode session runs under", () => {
     });
     // A tool that waits for the person must not be cut off by OpenCode.
     expect(settings.experimental.mcp_timeout).toBeGreaterThan(24 * 60 * 60 * 1000);
+    // A "no" is told to the bot instead of cutting its reply off.
+    expect(settings.experimental.continue_loop_on_deny).toBe(true);
   });
 });
 
