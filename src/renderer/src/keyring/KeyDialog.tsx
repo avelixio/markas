@@ -19,6 +19,8 @@ type TwoStepProblem = { ok: false; message: string };
 interface KeyDialogProps {
   /** The key being edited, or null to add a new one. */
   existing: KeySummary | null;
+  /** What a new key starts with, when it is added from somewhere that already knows the site. */
+  initial?: { name?: string; origin?: string; sharedWith?: string[] };
   bots: BotSummary[];
   onSave: (draft: KeyDraft) => Promise<void>;
   onClose: () => void;
@@ -28,8 +30,8 @@ interface KeyDialogProps {
 export function KeyDialog(props: KeyDialogProps) {
   const existing = props.existing;
   const [kind, setKind] = createSignal<KeyKind>(existing?.kind ?? "login");
-  const [name, setName] = createSignal(existing?.name ?? "");
-  const [origin, setOrigin] = createSignal(existing?.origin ?? "");
+  const [name, setName] = createSignal(existing?.name ?? props.initial?.name ?? "");
+  const [origin, setOrigin] = createSignal(existing?.origin ?? props.initial?.origin ?? "");
   const [username, setUsername] = createSignal(existing?.username ?? "");
   const [variable, setVariable] = createSignal(existing?.variable ?? "");
   const [value, setValue] = createSignal("");
@@ -64,7 +66,9 @@ export function KeyDialog(props: KeyDialogProps) {
     }
   }
   const [fillPolicy, setFillPolicy] = createSignal<FillPolicy>(existing?.fillPolicy ?? "auto");
-  const [sharedWith, setSharedWith] = createSignal<string[]>(existing?.sharedWith ?? []);
+  const [sharedWith, setSharedWith] = createSignal<string[]>(
+    existing?.sharedWith ?? props.initial?.sharedWith ?? [],
+  );
   const [saving, setSaving] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
   let firstField: HTMLInputElement | undefined;

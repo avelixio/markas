@@ -51,7 +51,7 @@ While the person controls a tab, the bot can neither act in it nor read it, and 
 `hand_off` waits for the person for up to four minutes, then reports "still waiting" so the bot can wait again or end its turn.
 The person gives the tab back with `browser.resumeControl`, optionally with a note the bot is told.
 A hand-off outlives the bot's turn: a tab the person holds stays theirs until they resume.
-The bot's browser is a normal window of its own, which `browser.bringToFront` raises and which taking over raises by itself.
+The bot's browser was a normal window of its own at first; since ADR 0014 it has none, and the person uses the page in the Browser panel.
 For the Browser panel, `browser.viewTab` returns a picture of the tab with who controls it; the panel asks for it as often as it wants to redraw.
 Every change is announced through the existing `browser-changed` and `browser-control-changed` events.
 
@@ -93,7 +93,7 @@ Every failure is a `BrowserProblem` with a plain sentence that says what happene
 
 `createBrowserService` in `src/host/browser-methods.ts` builds the real service.
 It returns `UnavailableBrowserService` with the reason when the driving library cannot be loaded, or when the browser is switched off with `MARKAS_BOT_BROWSER=off`.
-`MARKAS_BOT_BROWSER=<path>` names a browser to prefer, and `MARKAS_BROWSER_HEADLESS=1` runs without windows for checks.
+`MARKAS_BOT_BROWSER=<path>` names a browser to prefer, and `MARKAS_BROWSER_WINDOW=1` gives the browser a window of its own for looking into a problem (ADR 0014).
 
 ## Consequences
 

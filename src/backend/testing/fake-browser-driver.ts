@@ -8,6 +8,7 @@ import {
   type DriverFailure,
   type DriverPage,
   type DriverPageEvent,
+  type SecretFieldKind,
   type SecretTarget,
 } from "../browser/driver";
 
@@ -147,6 +148,8 @@ export class FakePage implements DriverPage {
   readonly fields = new Map<string, string>();
   /** Values in password fields and fields Markas filled. */
   readonly secrets: string[] = [];
+  /** The kinds of sign-in field this page shows. */
+  readonly secretFields = new Set<SecretFieldKind>(["username", "password"]);
   closed = false;
   crashed = false;
   /** Makes the next action on an element fail this way. */
@@ -199,6 +202,11 @@ export class FakePage implements DriverPage {
     this.actions.push(`type ${ref ?? "focused"}${submit ? " submit" : ""}`);
   }
 
+  async clickAt(x: number, y: number): Promise<void> {
+    this.#alive();
+    this.actions.push(`click-at ${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+
   async press(key: string): Promise<void> {
     this.#alive();
     this.actions.push(`key ${key}`);
@@ -238,6 +246,10 @@ export class FakePage implements DriverPage {
     this.fields.set(name, value);
     this.secrets.push(value);
     this.actions.push(`fill ${name}`);
+  }
+
+  async hasSecretField(field: SecretFieldKind): Promise<boolean> {
+    return this.secretFields.has(field);
   }
 
   async sensitiveValues(): Promise<string[]> {

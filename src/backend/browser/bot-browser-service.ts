@@ -6,6 +6,7 @@ import type {
   BrowserControlSession,
   BrowserControlState,
   BrowserHandOff,
+  BrowserPersonInput,
   BrowserResumeInput,
   BrowserTab,
   BrowserTabView,
@@ -14,6 +15,7 @@ import type {
 } from "../../shared/ipc";
 import type { BrowserCaller, BrowserSecretFill, BrowserService } from "../browser-tools";
 import { SecretRedactor } from "../keyring/redact";
+import type { SecretField, SecretFiller } from "../keyring/sign-in";
 import type { DynamicToolCallParams, DynamicToolResult } from "../protocol";
 import type { BrowserFinder } from "./browser-finder";
 import {
@@ -23,6 +25,7 @@ import {
   DriverError,
   type DriverPage,
   type DriverPageEvent,
+  type SecretFieldKind,
 } from "./driver";
 import {
   BROWSER_CLOSED,
@@ -90,6 +93,8 @@ interface HandOffRecord {
 const MAX_PAGE_TEXT = 80_000;
 const MAX_REMEMBERED_CLOSED_TABS = 200;
 const SCROLL_STEP = 600;
+/** How long a page gets to show a sign-in field before the answer is "it has none". */
+const SECRET_FIELD_WAIT_MS = 1_500;
 
 /**
  * The bot browser: one real browser per bot, each with its own profile folder, driven for
@@ -119,6 +124,8 @@ export class BotBrowserService implements BrowserService {
   readonly #changedListeners = new Set<(tabs: BrowserTab[], activeTabId: string | null) => void>();
   readonly #controlListeners = new Set<(state: BrowserControlState) => void>();
   #activeTabId: string | null = null;
+  /** The tab each bot worked in last: where a sign-in from the Keyring is typed. */
+  readonly #currentTab = new Map<string, string>();
   #destroyed = false;
 
   constructor(options: BotBrowserOptions) {
@@ -228,16 +235,16 @@ export class BotBrowserService implements BrowserService {
   }
 
   /**
-   * The bot's tab lives in a window of its own, not inside the Markas window, so there is
-   * nothing to place. `bringToFront` raises that window when the person asks for it.
+   * The bot's browser has no window of its own: the Browser panel draws the page and passes on
+   * what the person does there, so there is nothing to place.
    */
   async setVisible(_input: BrowserVisibilityInput): Promise<void> {}
 
   async takeControl(input: BrowserTakeControlInput): Promise<BrowserHandOff> {
     const tab = this.#tab(input.tabId);
     const record = this.#handOff(tab, "person", input.reason?.trim() || "You took over this tab.");
-    // Taking over is the person asking to use the tab, so its window comes to them.
-    await tab.page.bringToFront().catch(() => undefined);
+    // With a window of its own (a setting for checks), taking over brings that window forward.
+    if (!this.#headless) await tab.page.bringToFront().catch(() => undefined);
     return { ...record.info };
   }
 
@@ -279,14 +286,33 @@ export class BotBrowserService implements BrowserService {
     };
   }
 
-  async bringToFront(tabId: string): Promise<void> {
-    const tab = this.#tab(tabId);
-    if (this.#headless) {
+  async personInput(input: BrowserPersonInput): Promise<void> {
+    const tab = this.#tab(input.tabId);
+    if (!this.#handOffs.has(tab.id)) {
       throw new BrowserProblem(
-        "action-failed",
-        "The bot browser is running without windows, so there is no window to show.",
+        "invalid-request",
+        "The bot is using this tab. Take it over first, then use the page.",
       );
     }
+    if (tab.crashed) throw new BrowserProblem("page-crashed", PAGE_CRASHED);
+    try {
+      await this.#enqueue(tab, async () => {
+        if (input.kind === "click") await tab.page.clickAt(input.x, input.y);
+        else if (input.kind === "type") {
+          await tab.page.type(null, input.text, false, this.#actionTimeoutMs);
+        } else if (input.kind === "key") await tab.page.press(input.key);
+        else await tab.page.scroll(input.deltaY);
+      });
+    } catch (error) {
+      throw this.#explain(error, tab, "act");
+    }
+    this.#refresh(tab);
+  }
+
+  async bringToFront(tabId: string): Promise<void> {
+    const tab = this.#tab(tabId);
+    // Without a window there is nothing to raise: the page is in the Markas Browser panel.
+    if (this.#headless) return;
     try {
       await tab.page.bringToFront();
     } catch (error) {
@@ -328,10 +354,50 @@ export class BotBrowserService implements BrowserService {
     });
   }
 
+  secretFiller(): SecretFiller {
+    const kind = (field: SecretField): SecretFieldKind =>
+      field === "otp" ? "one-time-code" : field;
+    return {
+      currentUrl: async (botId) => this.#currentFor(botId)?.page.url() ?? null,
+      hasField: async (botId, field) => {
+        const tab = this.#currentFor(botId);
+        if (!tab || tab.crashed) return false;
+        return this.#enqueue(tab, () => tab.page.hasSecretField(kind(field), SECRET_FIELD_WAIT_MS));
+      },
+      fillSecret: async (botId, field, value, site) => {
+        const tab = this.#currentFor(botId);
+        if (!tab) return "not-found";
+        try {
+          await this.fillSecret({
+            botId,
+            tabId: tab.id,
+            origin: site,
+            target: { field: kind(field) },
+            value,
+          });
+          return "filled";
+        } catch (error) {
+          if (error instanceof BrowserProblem && error.code === "wrong-site") return "wrong-site";
+          if (error instanceof BrowserProblem && error.code === "element-missing") {
+            return "not-found";
+          }
+          throw error;
+        }
+      },
+      submit: async (botId) => {
+        const tab = this.#currentFor(botId);
+        if (!tab) return;
+        this.#requireBotControl(tab);
+        await this.#enqueue(tab, () => tab.page.press("Enter"));
+      },
+    };
+  }
+
   async forgetBot(botId: string): Promise<void> {
     await this.#closeBrowser(botId);
     this.#redactors.delete(botId);
     this.#lastThread.delete(botId);
+    this.#currentTab.delete(botId);
     for (const [tabId, gone] of this.#gone) {
       if (gone.botId === botId) this.#gone.delete(tabId);
     }
@@ -610,6 +676,7 @@ export class BotBrowserService implements BrowserService {
       const page = spare ?? (await context.newPage());
       const tab = this.#adopt(botId, page);
       tab.threadId = threadId;
+      this.#currentTab.set(botId, tab.id);
       return tab;
     } catch (error) {
       throw this.#explain(error, null, "open");
@@ -833,7 +900,16 @@ export class BotBrowserService implements BrowserService {
     const id = requireText(tabId, "tabId");
     const tab = this.#tabs.get(id);
     if (!tab || tab.botId !== botId) throw this.#goneProblem(id, botId);
+    this.#currentTab.set(botId, tab.id);
     return tab;
+  }
+
+  /** The tab a bot is working in: the one it used last, or else its newest one. */
+  #currentFor(botId: string): TabRecord | null {
+    const last = this.#tabs.get(this.#currentTab.get(botId) ?? "");
+    if (last && last.botId === botId) return last;
+    const own = [...this.#tabs.values()].filter((tab) => tab.botId === botId);
+    return own[own.length - 1] ?? null;
   }
 
   #goneProblem(tabId: string, botId: string | null): BrowserProblem {

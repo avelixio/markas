@@ -13,6 +13,7 @@ function methodsFor() {
     takeControl: vi.fn(async () => "hand-off"),
     resumeControl: vi.fn(),
     bringToFront: vi.fn(async () => undefined),
+    personInput: vi.fn(async (_input: unknown) => undefined),
     fillSecret: vi.fn(),
   };
   const methods = createBrowserMethods(browser as unknown as BrowserService);
@@ -43,6 +44,30 @@ describe("browser host methods", () => {
     expect(browser.bringToFront).toHaveBeenCalledWith("tab-1");
   });
 
+  it("passes on what the person does on a page, within limits", async () => {
+    const { browser, call } = methodsFor();
+    await call("browser.personInput", { tabId: "tab-1", kind: "click", x: 0.5, y: 0.25 });
+    await call("browser.personInput", { tabId: "tab-1", kind: "type", text: "hello" });
+    await call("browser.personInput", { tabId: "tab-1", kind: "key", key: "Enter" });
+    await call("browser.personInput", { tabId: "tab-1", kind: "scroll", deltaY: 99_999 });
+    expect(browser.personInput.mock.calls.map(([input]) => input)).toEqual([
+      { tabId: "tab-1", kind: "click", x: 0.5, y: 0.25 },
+      { tabId: "tab-1", kind: "type", text: "hello" },
+      { tabId: "tab-1", kind: "key", key: "Enter" },
+      { tabId: "tab-1", kind: "scroll", deltaY: 4_000 },
+    ]);
+
+    expect(() =>
+      call("browser.personInput", { tabId: "tab-1", kind: "click", x: 2, y: 0 }),
+    ).toThrow("Invalid x.");
+    expect(() => call("browser.personInput", { tabId: "tab-1", kind: "key", key: "F12" })).toThrow(
+      "That key is not passed on to the page.",
+    );
+    expect(() => call("browser.personInput", { tabId: "tab-1", kind: "drag" })).toThrow(
+      "Invalid page input.",
+    );
+  });
+
   it("rejects malformed input", () => {
     const { call } = methodsFor();
     expect(() => call("browser.viewTab", "")).toThrow("tabId is required.");
@@ -57,6 +82,7 @@ describe("browser host methods", () => {
     const { methods, browser } = methodsFor();
     expect(Object.keys(methods).sort()).toEqual([
       "browser.bringToFront",
+      "browser.personInput",
       "browser.resumeControl",
       "browser.takeControl",
       "browser.viewTab",

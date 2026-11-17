@@ -1,16 +1,55 @@
-import { createEffect, createSignal, Match, on, onCleanup, Show, Switch } from "solid-js";
-import type { BrowserHandOff, BrowserTabView } from "../../../shared/ipc";
+import {
+  createEffect,
+  createResource,
+  createSignal,
+  Match,
+  on,
+  onCleanup,
+  Show,
+  Switch,
+} from "solid-js";
+import {
+  type BotSummary,
+  BROWSER_PERSON_KEYS,
+  type BrowserHandOff,
+  type BrowserTabView,
+} from "../../../shared/ipc";
 import { callHost } from "../host-client";
 import { t } from "../i18n";
+import { KeyDialog } from "../keyring/KeyDialog";
+import { type KeyDraft, keyringClient } from "../keyring/keyring-client";
 import { Icon } from "../ui/Icon";
 import "./browser.css";
 
 /** How often the panel looks at the bot's page again while it is open. */
 export const PREVIEW_REFRESH_MS = 2_500;
+/** How often it looks while the person is using the page themselves. */
+export const LIVE_REFRESH_MS = 700;
 
 /** What the bot is told when the person skips its step. It is written to the bot, not shown. */
 const SKIP_NOTE =
   "The person chose to skip this step. Do not ask for it again; carry on without it or say what could not be done.";
+
+/** What the bot is told once a login for the site is in the Keyring. It is written to the bot, not shown. */
+const savedNote = (name: string, site: string) =>
+  `The person saved a login for ${site} in the Keyring as "${name}" and shared it with you. Sign in now with markas.keyring_sign_in and that key name. Do not ask the person to type it.`;
+
+/** The website of an address, when it is one a login can belong to. */
+export function siteOf(url: string | null | undefined): string | null {
+  try {
+    const parsed = new URL(url ?? "");
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.origin : null;
+  } catch {
+    return null;
+  }
+}
+
+/** What the person does on the page, before the tab it belongs to is added. */
+type PageInput =
+  | { kind: "click"; x: number; y: number }
+  | { kind: "type"; text: string }
+  | { kind: "key"; key: string }
+  | { kind: "scroll"; deltaY: number };
 
 const describe = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -23,7 +62,19 @@ function minutesSince(iso: string): number {
  * Shown in the conversation while a tab is in the person's hands: the bot passed a step on,
  * or the person took over. It always offers a way forward, even when the browser cannot open.
  */
-export function HandOffCard(props: { handOff: BrowserHandOff; botName: string }) {
+export function HandOffCard(props: {
+  handOff: BrowserHandOff;
+  botName: string;
+  /** The website the handed-over tab is on, when it is known. */
+  site?: string | null;
+  /** Shows the Browser panel, where the person uses the page. */
+  onOpenPanel?: () => void;
+}) {
+  const [savingKey, setSavingKey] = createSignal(false);
+  // The crew, for choosing who else may use the saved login; asked for only when the dialog opens.
+  const [bots] = createResource(savingKey, (open) =>
+    open ? callHost<BotSummary[]>("agent.listBots") : [],
+  );
   const [busy, setBusy] = createSignal<"open" | "done" | "skip" | null>(null);
   const [problem, setProblem] = createSignal<string | null>(null);
   const [minutes, setMinutes] = createSignal(minutesSince(props.handOff.startedAt));
@@ -38,6 +89,8 @@ export function HandOffCard(props: { handOff: BrowserHandOff; botName: string })
     setProblem(null);
     try {
       if (kind === "open") {
+        props.onOpenPanel?.();
+        // Brings the window forward too, for a browser that was given one of its own.
         await callHost("browser.bringToFront", props.handOff.tabId);
       } else {
         await callHost("browser.resumeControl", {
@@ -49,6 +102,21 @@ export function HandOffCard(props: { handOff: BrowserHandOff; botName: string })
       setProblem(describe(error));
     } finally {
       setBusy(null);
+    }
+  }
+
+  /** Saves the login the person typed into Markas, then hands the tab back so the bot signs in with it. */
+  async function saveKey(draft: KeyDraft): Promise<void> {
+    await keyringClient.create(draft);
+    setSavingKey(false);
+    setProblem(null);
+    try {
+      await callHost("browser.resumeControl", {
+        tabId: props.handOff.tabId,
+        note: savedNote(draft.name, draft.origin ?? props.site ?? ""),
+      });
+    } catch (error) {
+      setProblem(describe(error));
     }
   }
 
@@ -94,6 +162,18 @@ export function HandOffCard(props: { handOff: BrowserHandOff; botName: string })
           <Icon name="check" size={12} />
           {byBot() ? t("handoff.done") : t("handoff.giveBack", { name: props.botName })}
         </button>
+        <Show when={byBot() && props.site}>
+          <button
+            type="button"
+            data-slot="save-key"
+            class="mk-button mk-button--small"
+            disabled={busy() !== null}
+            onClick={() => setSavingKey(true)}
+          >
+            <Icon name="key" size={12} />
+            {t("handoff.saveKey")}
+          </button>
+        </Show>
         <Show when={byBot()}>
           <button
             type="button"
@@ -105,6 +185,28 @@ export function HandOffCard(props: { handOff: BrowserHandOff; botName: string })
           </button>
         </Show>
       </div>
+      <Show when={byBot() && props.site}>
+        {(site) => (
+          <p data-slot="key-hint" class="mk-handoff__hint">
+            {t("handoff.saveKey.hint", { site: new URL(site()).host, name: props.botName })}
+          </p>
+        )}
+      </Show>
+      <Show when={savingKey() && props.site}>
+        {(site) => (
+          <KeyDialog
+            existing={null}
+            initial={{
+              name: new URL(site()).host,
+              origin: site(),
+              sharedWith: props.handOff.botId ? [props.handOff.botId] : [],
+            }}
+            bots={bots() ?? []}
+            onSave={saveKey}
+            onClose={() => setSavingKey(false)}
+          />
+        )}
+      </Show>
     </section>
   );
 }
@@ -144,11 +246,19 @@ export function BrowserPreview(props: {
         setView(null);
         setFailure(null);
         void look(tabId);
-        const timer = setInterval(() => void look(tabId), PREVIEW_REFRESH_MS);
-        onCleanup(() => clearInterval(timer));
       },
     ),
   );
+
+  // Looks again on a timer: often while the person uses the page, calmly while the bot does.
+  createEffect(() => {
+    const tabId = props.tabId;
+    const timer = setInterval(
+      () => void look(tabId),
+      view()?.controller === "person" ? LIVE_REFRESH_MS : PREVIEW_REFRESH_MS,
+    );
+    onCleanup(() => clearInterval(timer));
+  });
 
   // The toolbar's button asks for a fresh look at once, without waiting for the next round.
   createEffect(
@@ -175,9 +285,95 @@ export function BrowserPreview(props: {
 
   const waiting = () => view()?.controller === "person";
 
+  // What the person does on the page is passed on in the order they did it.
+  let sending: Promise<void> = Promise.resolve();
+  function send(input: PageInput) {
+    const tabId = props.tabId;
+    sending = sending
+      .then(() => callHost("browser.personInput", { ...input, tabId }))
+      .then(() => look(tabId))
+      .catch((error) => {
+        if (wanted === tabId) setFailure(describe(error));
+      });
+  }
+
+  function onPageClick(event: MouseEvent & { currentTarget: HTMLElement }): void {
+    if (!waiting()) return;
+    const picture = event.currentTarget.querySelector("img");
+    if (!picture) return;
+    const box = picture.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) return;
+    const x = (event.clientX - box.left) / box.width;
+    const y = (event.clientY - box.top) / box.height;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return;
+    event.currentTarget.focus();
+    send({ kind: "click", x, y });
+  }
+
+  function onPageKey(event: KeyboardEvent): void {
+    if (!waiting()) return;
+    const command = event.ctrlKey || event.metaKey;
+    let key: string | null = null;
+    if (command && event.key.toLowerCase() === "a") key = "ControlOrMeta+a";
+    else if (command || event.altKey) return;
+    else if (event.key === "Tab" && event.shiftKey) key = "Shift+Tab";
+    else if ((BROWSER_PERSON_KEYS as readonly string[]).includes(event.key)) key = event.key;
+    if (key) {
+      event.preventDefault();
+      send({ kind: "key", key });
+    } else if (event.key.length === 1) {
+      event.preventDefault();
+      send({ kind: "type", text: event.key });
+    }
+  }
+
+  function onPagePaste(event: ClipboardEvent): void {
+    if (!waiting()) return;
+    const text = event.clipboardData?.getData("text") ?? "";
+    if (!text) return;
+    event.preventDefault();
+    send({ kind: "type", text });
+  }
+
+  let scrolled = 0;
+  let scrollTimer: ReturnType<typeof setTimeout> | undefined;
+  function onPageWheel(event: WheelEvent): void {
+    if (!waiting()) return;
+    event.preventDefault();
+    scrolled += event.deltaY;
+    // Many small wheel steps become one scroll, so the page is not flooded.
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const deltaY = scrolled;
+      scrolled = 0;
+      if (deltaY !== 0) send({ kind: "scroll", deltaY });
+    }, 120);
+  }
+  onCleanup(() => clearTimeout(scrollTimer));
+
+  async function giveBack(): Promise<void> {
+    try {
+      await callHost("browser.resumeControl", { tabId: props.tabId });
+      await look(props.tabId);
+    } catch (error) {
+      setFailure(describe(error));
+    }
+  }
+
   return (
     <div data-component="BrowserPreview" class="mk-preview">
-      <div data-slot="page" class="mk-preview__page" classList={{ "is-dim": waiting() }}>
+      <div
+        data-slot="page"
+        class="mk-preview__page"
+        classList={{ "is-live": waiting() }}
+        tabIndex={waiting() ? 0 : undefined}
+        role="application"
+        aria-label={waiting() ? t("preview.live.label") : t("preview.watch.label")}
+        onClick={onPageClick}
+        onKeyDown={onPageKey}
+        onPaste={onPagePaste}
+        on:wheel={{ handleEvent: onPageWheel, passive: false }}
+      >
         <Switch fallback={<p class="mk-preview__note">{t("common.loading.busy")}</p>}>
           <Match when={failure()}>
             {(message) => (
@@ -224,7 +420,11 @@ export function BrowserPreview(props: {
                   ? t("preview.waiting", { name: props.botName })
                   : t("preview.driving", { name: props.botName })}
               </strong>
-              <small>{current().handOff?.reason ?? current().tab.url}</small>
+              <small>
+                {waiting()
+                  ? t("preview.live.hint")
+                  : (current().handOff?.reason ?? current().tab.url)}
+              </small>
             </span>
             <Show
               when={waiting()}
@@ -243,14 +443,10 @@ export function BrowserPreview(props: {
               <button
                 type="button"
                 class="mk-button mk-button--small"
-                onClick={() =>
-                  void callHost("browser.bringToFront", props.tabId).catch((error) =>
-                    setFailure(describe(error)),
-                  )
-                }
+                onClick={() => void giveBack()}
               >
-                <Icon name="external" size={12} />
-                {t("handoff.open", { name: props.botName })}
+                <Icon name="check" size={12} />
+                {t("handoff.giveBack", { name: props.botName })}
               </button>
             </Show>
           </div>

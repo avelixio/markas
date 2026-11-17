@@ -58,6 +58,47 @@ afterEach(() => {
 });
 
 describe("HandOffCard", () => {
+  it("saves a login for the site in the Keyring, then tells the bot to sign in with it", async () => {
+    answers["agent.listBots"] = [];
+    render(() => (
+      <HandOffCard handOff={handOff()} botName="Juno" site="https://admin.example.com" />
+    ));
+    fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
+
+    // The dialog already knows the site and who asked.
+    const website = await screen.findByLabelText(/^Website/);
+    expect(website).toHaveValue("https://admin.example.com");
+    expect(screen.getByLabelText(/^Name/)).toHaveValue("admin.example.com");
+    fireEvent.input(screen.getByLabelText(/^Username/), {
+      target: { value: "sam" },
+    });
+    fireEvent.input(screen.getByLabelText(/^Password/), {
+      target: { value: "open-sesame-not-real" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
+
+    await waitFor(() => expect(calls.at(-1)?.method).toBe("browser.resumeControl"));
+    const created = calls.find((call) => call.method === "keyring.create")?.input;
+    expect(created).toMatchObject({
+      name: "admin.example.com",
+      kind: "login",
+      origin: "https://admin.example.com",
+      username: "sam",
+      sharedWith: ["juno"],
+    });
+    const resumed = calls.at(-1)?.input as { tabId: string; note: string };
+    expect(resumed.tabId).toBe("tab-1");
+    expect(resumed.note).toContain("markas.keyring_sign_in");
+    expect(resumed.note).toContain("admin.example.com");
+    // The password goes to the Keyring only, never into what the bot is told.
+    expect(resumed.note).not.toContain("open-sesame-not-real");
+  });
+
+  it("offers no login to save when the site is unknown or the person took over", () => {
+    render(() => <HandOffCard handOff={handOff()} botName="Juno" />);
+    expect(screen.queryByRole("button", { name: t("handoff.saveKey") })).toBeNull();
+  });
+
   it("says why the bot needs the person, and for how long it has waited", () => {
     render(() => <HandOffCard handOff={handOff()} botName="Juno" />);
     expect(screen.getByText(t("handoff.title.bot", { name: "Juno" }))).toBeInTheDocument();
@@ -123,6 +164,46 @@ describe("BrowserPreview", () => {
     expect(await screen.findByText(t("preview.waiting", { name: "Juno" }))).toBeInTheDocument();
     expect(calls.map((call) => call.method)).toContain("browser.takeControl");
     expect(screen.queryByRole("button", { name: t("preview.takeOver") })).not.toBeInTheDocument();
+  });
+
+  it("passes on clicks and typing while the person uses the page, and gives it back", async () => {
+    answers["browser.viewTab"] = tabView({ controller: "person", handOff: handOff() });
+    render(() => <BrowserPreview tabId="tab-1" botName="Juno" />);
+    const picture = await screen.findByAltText(t("preview.alt", { title: "Admin console" }));
+    const page = screen.getByRole("application", { name: t("preview.live.label") });
+    picture.getBoundingClientRect = () =>
+      ({ left: 100, top: 50, width: 400, height: 200 }) as DOMRect;
+
+    fireEvent.click(page, { clientX: 200, clientY: 100 });
+    fireEvent.keyDown(page, { key: "a" });
+    fireEvent.keyDown(page, { key: "Enter" });
+    // Keys the page has no use for stay with Markas.
+    fireEvent.keyDown(page, { key: "F5" });
+    await waitFor(() =>
+      expect(
+        calls.filter((call) => call.method === "browser.personInput").map((call) => call.input),
+      ).toEqual([
+        { tabId: "tab-1", kind: "click", x: 0.25, y: 0.25 },
+        { tabId: "tab-1", kind: "type", text: "a" },
+        { tabId: "tab-1", kind: "key", key: "Enter" },
+      ]),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: t("handoff.giveBack", { name: "Juno" }) }));
+    await waitFor(() =>
+      expect(calls).toContainEqual({ method: "browser.resumeControl", input: { tabId: "tab-1" } }),
+    );
+  });
+
+  it("passes nothing on while the bot is using the page", async () => {
+    answers["browser.viewTab"] = tabView();
+    render(() => <BrowserPreview tabId="tab-1" botName="Juno" />);
+    await screen.findByAltText(t("preview.alt", { title: "Admin console" }));
+    const page = screen.getByRole("application", { name: t("preview.watch.label") });
+    fireEvent.click(page, { clientX: 10, clientY: 10 });
+    fireEvent.keyDown(page, { key: "a" });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(calls.some((call) => call.method === "browser.personInput")).toBe(false);
   });
 
   it("says so in plain words when the page has a problem", async () => {

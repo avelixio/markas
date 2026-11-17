@@ -3,6 +3,7 @@
 import type {
   BrowserControlState,
   BrowserHandOff,
+  BrowserPersonInput,
   BrowserResumeInput,
   BrowserTab,
   BrowserTabView,
@@ -10,6 +11,7 @@ import type {
   BrowserVisibilityInput,
 } from "../shared/ipc";
 import type { SecretTarget } from "./browser/driver";
+import type { SecretFiller } from "./keyring/sign-in";
 import type { DynamicToolCallParams, DynamicToolResult } from "./protocol";
 
 export const MARKAS_BROWSER_NAMESPACE = "markas_browser";
@@ -128,7 +130,9 @@ export interface BrowserService {
   resumeControl(input: BrowserResumeInput): void;
   /** One look at a tab, for the Browser panel: a picture and who controls it. */
   viewTab(tabId: string): Promise<BrowserTabView>;
-  /** Raises the tab's window on the person's screen. */
+  /** What the person does on a tab they have taken over: a click, typing, a key or scrolling. */
+  personInput(input: BrowserPersonInput): Promise<void>;
+  /** Raises the tab's window on the person's screen, when the browser has one. */
   bringToFront(tabId: string): Promise<void>;
   /**
    * Puts a secret into a form field without the bot ever seeing it.
@@ -136,6 +140,11 @@ export interface BrowserService {
    * never logged, returned or put in an error.
    */
   fillSecret(input: BrowserSecretFill): Promise<void>;
+  /**
+   * The door the Keyring uses to type a sign-in into the bot's current tab.
+   * For host code only, like `fillSecret`.
+   */
+  secretFiller(): SecretFiller;
   /** Closes a deleted bot's browser and removes its profile. */
   forgetBot(botId: string): Promise<void>;
   destroy(): Promise<void>;

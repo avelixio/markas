@@ -495,3 +495,69 @@ describe("what the Browser panel sees", () => {
     expect(seen.at(-1)).toEqual([0, null]);
   });
 });
+
+describe("signing in from the Keyring", () => {
+  it("types into the tab the bot is working in, and sends the form", async () => {
+    await openTab();
+    const filler = browser.secretFiller();
+    expect(await filler.currentUrl("atlas")).toBe(`${SITE}/login`);
+    expect(await filler.hasField("atlas", "password")).toBe(true);
+    expect(await filler.hasField("atlas", "otp")).toBe(false);
+
+    expect(await filler.fillSecret("atlas", "username", "sam", SITE)).toBe("filled");
+    expect(await filler.fillSecret("atlas", "password", SECRET, SITE)).toBe("filled");
+    await filler.submit("atlas");
+
+    expect(pageOf().fields.get("username")).toBe("sam");
+    expect(pageOf().fields.get("password")).toBe(SECRET);
+    expect(pageOf().actions.at(-1)).toBe("key Enter");
+  });
+
+  it("follows the bot to the tab it used last", async () => {
+    const first = await openTab();
+    await openTab("atlas", "https://other.example.com/login");
+    const filler = browser.secretFiller();
+    expect(await filler.currentUrl("atlas")).toBe("https://other.example.com/login");
+
+    await read("atlas", first.id);
+    expect(await filler.currentUrl("atlas")).toBe(`${SITE}/login`);
+  });
+
+  it("types nothing on another site, and has no tab for a bot without one", async () => {
+    await openTab();
+    const filler = browser.secretFiller();
+    expect(await filler.fillSecret("atlas", "password", SECRET, "https://pay.example.com")).toBe(
+      "wrong-site",
+    );
+    expect(pageOf().fields.has("password")).toBe(false);
+
+    expect(await filler.currentUrl("juno")).toBeNull();
+    expect(await filler.hasField("juno", "password")).toBe(false);
+    expect(await filler.fillSecret("juno", "password", SECRET, SITE)).toBe("not-found");
+  });
+});
+
+describe("the person using a page in the Browser panel", () => {
+  it("passes on a click, typing, a key and scrolling once the person has taken over", async () => {
+    const tab = await openTab();
+    await browser.takeControl({ tabId: tab.id });
+    await browser.personInput({ tabId: tab.id, kind: "click", x: 0.5, y: 0.25 });
+    await browser.personInput({ tabId: tab.id, kind: "type", text: "sam" });
+    await browser.personInput({ tabId: tab.id, kind: "key", key: "Enter" });
+    await browser.personInput({ tabId: tab.id, kind: "scroll", deltaY: 300 });
+    expect(pageOf().actions.slice(-4)).toEqual([
+      "click-at 0.50,0.25",
+      "type focused",
+      "key Enter",
+      "scroll 300",
+    ]);
+  });
+
+  it("refuses while the bot is the one using the tab", async () => {
+    const tab = await openTab();
+    await expect(
+      browser.personInput({ tabId: tab.id, kind: "click", x: 0.5, y: 0.5 }),
+    ).rejects.toThrow("Take it over first");
+    expect(pageOf().actions).not.toContain("click-at 0.50,0.50");
+  });
+});

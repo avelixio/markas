@@ -642,6 +642,36 @@ export interface BrowserTakeControlInput {
   reason?: string;
 }
 
+/**
+ * Something the person does on a page they have taken over, through the Browser panel.
+ * A click is given as a share of the picture's width and height, from 0 to 1.
+ */
+export type BrowserPersonInput = { tabId: string } & (
+  | { kind: "click"; x: number; y: number }
+  | { kind: "type"; text: string }
+  | { kind: "key"; key: string }
+  | { kind: "scroll"; deltaY: number }
+);
+
+/** The keys the Browser panel passes on to a page, besides plain typing. */
+export const BROWSER_PERSON_KEYS = [
+  "Enter",
+  "Backspace",
+  "Delete",
+  "Tab",
+  "Shift+Tab",
+  "Escape",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "Home",
+  "End",
+  "PageUp",
+  "PageDown",
+  "ControlOrMeta+a",
+] as const;
+
 export interface BrowserResumeInput {
   tabId: string;
   /** Something the person wants the bot to know, such as "the code was accepted". */

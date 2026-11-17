@@ -9,6 +9,7 @@ import {
   type DriverFailure,
   type DriverPage,
   type DriverPageEvent,
+  type SecretFieldKind,
   type SecretTarget,
 } from "./driver";
 
@@ -62,6 +63,8 @@ export class PlaywrightDriver implements BrowserDriver {
         viewport: headless ? { width: 1280, height: 800 } : null,
         timeout: LAUNCH_TIMEOUT_MS,
         args: ["--no-first-run", "--no-default-browser-check"],
+        // The browser keeps its own sandbox, as it does when a person starts it.
+        chromiumSandbox: process.env.MARKAS_BROWSER_NO_SANDBOX !== "1",
       });
       return new PlaywrightContext(context);
     } catch (error) {
@@ -160,6 +163,16 @@ class PlaywrightPage implements DriverPage {
     });
   }
 
+  clickAt(x: number, y: number): Promise<void> {
+    return this.#guard(async () => {
+      const size =
+        this.#page.viewportSize() ??
+        (await this.#page.evaluate(() => ({ width: innerWidth, height: innerHeight })));
+      await this.#page.mouse.click(Math.round(x * size.width), Math.round(y * size.height));
+      await this.#settle();
+    });
+  }
+
   press(key: string): Promise<void> {
     return this.#guard(async () => {
       await this.#page.keyboard.press(key);
@@ -206,6 +219,14 @@ class PlaywrightPage implements DriverPage {
     } catch (error) {
       if (failure === "other") failure = classify(error).failure;
       throw new DriverError(failure, "The field could not be filled.");
+    }
+  }
+
+  async hasSecretField(field: SecretFieldKind, timeoutMs: number): Promise<boolean> {
+    try {
+      return (await this.#secretField({ field }, timeoutMs)) !== null;
+    } catch {
+      return false;
     }
   }
 

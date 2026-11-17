@@ -134,7 +134,6 @@ export async function startHost(
     setup.preferredProvider ?? "codex",
     options.createClient,
   );
-  // Bots use keys through the host. The real bot browser plugs in here, as `filler`.
   service.useOptimizer({
     settings: () => optimizer.settings(),
     compacted: (botId, before, after) => optimizer.record("compact", botId, before - after),
@@ -142,6 +141,8 @@ export async function startHost(
   service.useKeys(
     createBotKeyTools({
       keyring: keyringProblem ? null : keyring,
+      // A sign-in from the Keyring is typed into the bot's own browser tab.
+      filler: browser.secretFiller(),
       logbook,
       botName: (id) => service.listBots().find((bot) => bot.id === id)?.name ?? "A bot",
     }),

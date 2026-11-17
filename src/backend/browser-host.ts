@@ -5,6 +5,7 @@ import type {
   BrowserTabView,
 } from "../shared/ipc";
 import type { BrowserService } from "./browser-tools";
+import { NoBrowserSecretFiller, type SecretFiller } from "./keyring/sign-in";
 import type { DynamicToolResult } from "./protocol";
 
 export const BROWSER_UNAVAILABLE_MESSAGE = "The Markas browser cannot be used on this computer.";
@@ -34,6 +35,11 @@ export class UnavailableBrowserService implements BrowserService {
 
   getControlState(): BrowserControlState {
     return { sessions: [], handOffs: [] };
+  }
+
+  /** With no browser there is never a tab, so nothing is ever typed. */
+  secretFiller(): SecretFiller {
+    return new NoBrowserSecretFiller();
   }
 
   endControl(): void {}
@@ -72,6 +78,10 @@ export class UnavailableBrowserService implements BrowserService {
   resumeControl(): void {}
 
   async viewTab(): Promise<BrowserTabView> {
+    throw new Error(this.#message);
+  }
+
+  async personInput(): Promise<void> {
     throw new Error(this.#message);
   }
 

@@ -18,7 +18,7 @@ import type {
 } from "../../../shared/ipc";
 import { MESSAGE_REACTIONS, MORE_MESSAGE_REACTIONS } from "../../../shared/ipc";
 import { AccessChip, AccessControl } from "../access/AccessControl";
-import { BrowserPreview, HandOffCard } from "../browser/HandOff";
+import { BrowserPreview, HandOffCard, siteOf } from "../browser/HandOff";
 import type { BotMessage, BotProfile } from "../data";
 import { AVATAR_COLORS, AVATAR_SHAPES, ONBOARDING_TOPICS } from "../data";
 import { t } from "../i18n";
@@ -1905,7 +1905,12 @@ export function Conversation(props: ConversationProps) {
       <div data-slot="composer" class="composer-wrap">
         <Show when={botHandOff()}>
           {(handOff) => (
-            <HandOffCard handOff={handOff()} botName={props.bot?.name ?? t("common.bot")} />
+            <HandOffCard
+              handOff={handOff()}
+              botName={props.bot?.name ?? t("common.bot")}
+              site={siteOf(props.browserTabs.find((tab) => tab.id === handOff().tabId)?.url)}
+              onOpenPanel={() => setActiveRightPanel("browser")}
+            />
           )}
         </Show>
         <Show when={showAttachments()}>

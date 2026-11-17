@@ -69,8 +69,14 @@
   height: auto;
 }
 
-.mk-preview__page.is-dim img {
-  opacity: 0.45;
+.mk-preview__page.is-live {
+  cursor: pointer;
+  outline: 2px solid var(--mk-accent-base);
+  outline-offset: -2px;
+}
+
+.mk-preview__page.is-live:focus-visible {
+  outline-width: 3px;
 }
 
 .mk-preview__note {
@@ -121,4 +127,10 @@
   color: var(--mk-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mk-handoff__hint {
+  margin: 0;
+  font-size: var(--mk-text-xs, 12px);
+  color: var(--mk-text-secondary);
 }

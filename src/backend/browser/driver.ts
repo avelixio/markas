@@ -11,7 +11,7 @@ export interface BrowserLaunchOptions {
   target: BrowserTarget;
   /** The bot's own profile folder: cookies, sign-ins and site data live here. */
   profileDir: string;
-  /** Without a window. The person cannot take over a headless browser, so this is for checks only. */
+  /** Without a window of its own. The person sees and uses the page in the Markas Browser panel. */
   headless: boolean;
 }
 
@@ -54,7 +54,9 @@ export type SecretTarget =
   /** A CSS selector, for a caller that already knows the form. */
   | { selector: string }
   /** The usual field of that kind, found by how sign-in forms are normally marked up. */
-  | { field: "username" | "password" | "one-time-code" };
+  | { field: SecretFieldKind };
+
+export type SecretFieldKind = "username" | "password" | "one-time-code";
 
 export interface DriverPage {
   url(): string;
@@ -66,6 +68,8 @@ export interface DriverPage {
   /** Types into the element, or into whatever has focus when `ref` is null. */
   type(ref: string | null, text: string, submit: boolean, timeoutMs: number): Promise<void>;
   press(key: string): Promise<void>;
+  /** Clicks a point of the visible page, given as a share of its width and height (0 to 1). */
+  clickAt(x: number, y: number): Promise<void>;
   scroll(deltaY: number): Promise<void>;
   back(timeoutMs: number): Promise<void>;
   forward(timeoutMs: number): Promise<void>;
@@ -75,6 +79,8 @@ export interface DriverPage {
    * covered in screenshots. Errors never contain the value.
    */
   fill(target: SecretTarget, value: string, timeoutMs: number): Promise<void>;
+  /** Whether the page's own document shows the usual field of that kind. Nothing is typed. */
+  hasSecretField(field: SecretFieldKind, timeoutMs: number): Promise<boolean>;
   /** What is typed into password fields and filled secret fields right now. */
   sensitiveValues(): Promise<string[]>;
   /** A JPEG of the visible page, with secret fields covered. */

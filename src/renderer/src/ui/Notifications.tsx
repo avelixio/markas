@@ -43,6 +43,7 @@ export function Notifications(props: { onOpenBot: (botId: string) => void; onClo
 
   const openBrowser = (notice: CrewNotice) => {
     setProblem(null);
+    // The page itself is in the bot's chat, in the Browser panel.
     void callHost("browser.bringToFront", notice.tabId).catch((error) =>
       setProblem(error instanceof Error ? error.message : String(error)),
     );

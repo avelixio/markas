@@ -31,6 +31,8 @@ interface Visit {
 }
 const visits = new Map<string, Visit>();
 const received = { password: "", code: "" };
+/** What the person did on the pad page through the Browser panel. */
+const pad = { clicks: 0, text: "" };
 
 const page = (title: string, body: string) =>
   new Response(
@@ -105,6 +107,27 @@ const site = Bun.serve({
       case "GET /account":
         if (visit?.step !== "in") return go("/login");
         return page("Stock overview", "<p>Welcome back, Atlas.</p><a href='/login'>Sign out</a>");
+      case "GET /pad":
+        // A page that is one big button: a click anywhere moves the caret into the field.
+        return page(
+          "Pad",
+          `<form method="get" action="/pad-done"><input name="text" aria-label="Text"></form>
+           <button id="all" style="position:fixed;inset:0;width:100%;height:100%;opacity:0.01">Anywhere</button>
+           <script>
+             const all = document.getElementById("all");
+             all.addEventListener("click", async () => {
+               await fetch("/pad-click", { method: "POST" });
+               all.remove();
+               document.querySelector("input").focus();
+             });
+           </script>`,
+        );
+      case "POST /pad-click":
+        pad.clicks += 1;
+        return new Response("ok");
+      case "GET /pad-done":
+        pad.text = url.searchParams.get("text") ?? "";
+        return page("Pad done", "<p>Thank you.</p>");
       case "GET /slow":
         // A page that never answers.
         return new Promise<Response>(() => undefined);
@@ -329,6 +352,75 @@ async function signInFlow(finder: BrowserFinder, label: string, profilesRoot: st
         service.resumeControl({ tabId });
         const read = await readPage(service, "atlas", tabId);
         expect(read.text.includes("Welcome back, Atlas."), `Unexpected page:\n${read.text}`);
+      },
+    );
+
+    await check(
+      `${label}: the person clicks and types on the page through the Browser panel`,
+      async () => {
+        const tab = await service.open(`${origin}/pad`, "thread-atlas", "atlas");
+        const early = await service
+          .personInput({ tabId: tab.id, kind: "click", x: 0.5, y: 0.5 })
+          .then(
+            () => null,
+            (error: Error) => error.message,
+          );
+        expect(early?.includes("Take it over first"), `Not refused while the bot drives: ${early}`);
+        await service.takeControl({ tabId: tab.id });
+        await service.personInput({ tabId: tab.id, kind: "click", x: 0.5, y: 0.5 });
+        await waitFor(() => pad.clicks === 1, "the page to receive the click");
+        await service.personInput({ tabId: tab.id, kind: "type", text: "hello from the panel" });
+        await service.personInput({ tabId: tab.id, kind: "key", key: "Enter" });
+        await waitFor(() => pad.text === "hello from the panel", "the page to receive the typing");
+        const view = await service.viewTab(tab.id);
+        expect(
+          view.image && view.tab.url.startsWith(`${origin}/pad-done`),
+          `Still on ${view.tab.url}`,
+        );
+        service.resumeControl({ tabId: tab.id });
+        await service.close(tab.id);
+      },
+    );
+
+    await check(
+      `${label}: a login from the Keyring is typed and sent for another bot`,
+      async () => {
+        const tab = await service.open(`${origin}/login`, "thread-juno", "juno");
+        const filler = service.secretFiller();
+        expect((await filler.currentUrl("juno")) === `${origin}/login`, "The filler sees no tab.");
+        expect(await filler.hasField("juno", "password"), "No password field was found.");
+        expect(
+          !(await filler.hasField("juno", "otp")),
+          "A code field was found on the sign-in page.",
+        );
+        received.password = "";
+        const refused = await filler.fillSecret(
+          "juno",
+          "password",
+          PASSWORD,
+          "https://shop.example.com",
+        );
+        expect(refused === "wrong-site", `Typed on the wrong site: ${refused}`);
+        expect(
+          (await filler.fillSecret("juno", "username", USERNAME, origin)) === "filled",
+          "Username not typed.",
+        );
+        expect(
+          (await filler.fillSecret("juno", "password", PASSWORD, origin)) === "filled",
+          "Password not typed.",
+        );
+        await filler.submit("juno");
+        await waitFor(
+          () =>
+            service
+              .listTabs()
+              .some((open) => open.id === tab.id && open.url === `${origin}/verify`),
+          "the site to accept the login",
+        );
+        expect(received.password === PASSWORD, "The site did not receive the password.");
+        const read = await readPage(service, "juno", tab.id);
+        expect(!read.text.includes(PASSWORD), "The password is in what the bot reads.");
+        await service.close(tab.id);
       },
     );
 
