@@ -25,6 +25,7 @@ import { t } from "../i18n";
 import { Icon } from "../ui/Icon";
 import { AgentAvatar } from "./AgentAvatar";
 import { ComposerEditor, expandComposerMentions } from "./ComposerEditor";
+import { ContextBreakdown } from "./ContextBreakdown";
 import { ChoiceCard, PromptCard } from "./ConversationPrompts";
 import { ExportBot } from "./ExportBot";
 import { FilesPanel } from "./FilesPanel";
@@ -2451,6 +2452,7 @@ export function Conversation(props: ConversationProps) {
                 onBlur={() => saveBotPatch({ description: settingsDescription() })}
               />
             </label>
+            <Show when={props.bot}>{(bot) => <ContextBreakdown botId={bot().id} />}</Show>
             <section
               data-slot="engine"
               class="agent-settings-model"

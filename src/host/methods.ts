@@ -71,6 +71,7 @@ export function createHostMethods(context: HostContext): Record<string, HostMeth
     "agent.listBots": () => service.listBots(),
     "agent.createBot": () => service.createBot(),
     "agent.updateBot": (input) => service.updateBot(parseUpdateBot(input)),
+    "agent.contextBreakdown": (botId) => service.contextBreakdown(requireString(botId, "botId")),
     "agent.deleteBot": (botId) => service.deleteBot(requireString(botId, "botId")),
     "agent.readConversation": (botId) => service.readConversation(requireString(botId, "botId")),
     "agent.sendMessage": (input) => service.sendMessage(parseSendMessage(input)),

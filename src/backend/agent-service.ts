@@ -12,6 +12,7 @@ import type {
   AgentReasoningEffort,
   AgentStatus,
   AttachmentDataInput,
+  BotContextBreakdown,
   BotSummary,
   ConversationSnapshot,
   DeletedBot,
@@ -325,6 +326,33 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   /** Lets the Optimizer set when conversations are folded, and count what that saves. */
   useOptimizer(hooks: OptimizerHooks): void {
     this.#optimizer = hooks;
+  }
+
+  /**
+   * What fills one bot's context. An engine that can break it down is asked; otherwise the
+   * last total it reported is given. Null when nothing has been reported yet.
+   */
+  async contextBreakdown(botId: string): Promise<BotContextBreakdown | null> {
+    const bot = this.#store.list().find((candidate) => candidate.id === botId);
+    if (!bot) throw new Error("Bot not found.");
+    if (!bot.threadId) return null;
+    const client = this.#clientForBot(bot);
+    const detailed = await client
+      ?.contextBreakdown?.(bot.threadId)
+      // A session that cannot answer right now falls back to the last total.
+      .catch(() => null);
+    if (detailed) return { botId, ...detailed };
+    const budget = this.#contextBudgets.get(bot.threadId);
+    if (!budget) return null;
+    return {
+      botId,
+      usedTokens: budget.usedTokens,
+      maxTokens: budget.contextWindow,
+      model: null,
+      categories: [],
+      notLoaded: [],
+      autoCompactAt: null,
+    };
   }
 
   /** How full each bot's conversation is, for the bots whose engine has reported it. */
@@ -2654,7 +2682,7 @@ function developerInstructions(bot: BotSummary, sharedRoot: string, lean = false
     `The shared directory available to every Markas agent is ${sharedRoot}.`,
     ACCESS_INSTRUCTIONS[bot.access],
     ...(lean ? [LEAN_INSTRUCTIONS] : []),
-    `For every browser task, use ${MARKAS_BROWSER_NAMESPACE} directly. It is your own private browser, with its own saved sign-ins, and is available through its dynamic tools. When a page needs something only the user can do, such as a code sent to their phone or a CAPTCHA, call hand_off on that tab and wait; never ask the user to put a password or a code in the chat. Never use browser:control-in-app-browser, browser-use, Chrome, or another browser plugin inside Markas; those tools target a different host and can report a false unavailable state. Use the installed Computer Use plugin only for macOS GUI tasks outside the browser.`,
+    `For every browser task, use ${MARKAS_BROWSER_NAMESPACE} directly. It is your own private browser, with its own saved sign-ins, and is available through its dynamic tools. When a page needs something only the user can do, such as a code sent to their phone or a CAPTCHA, call hand_off on that tab and wait; never ask the user to put a password or a code in the chat. Never use browser:control-in-app-browser, browser-use, Chrome, or another browser plugin inside Markas; those tools target a different host and can report a false unavailable state. Do not use Computer Use, or any other tool that takes over the screen, keyboard or mouse of this computer: Markas can neither show the person what such a tool does nor write it in the Logbook, and the system would ask for access in another program's name. If a task cannot be done without it, say so and stop.`,
     "Use markas.list_agents to discover other persistent Markas teammates.",
     "You cannot add a teammate by writing files: a bot exists only once Markas has created it. When the person asks for a new teammate, call markas.propose_teammate; they confirm it on a card, and then it appears in their crew.",
     "Use markas.send_message to send asynchronous messages or local files to one or more teammates. Always set replyToMessageId when answering a teammate. Replies are never forwarded automatically.",

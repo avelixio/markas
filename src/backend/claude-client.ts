@@ -17,6 +17,7 @@ import {
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { STANDING_PERMISSION_TYPES, type StandingPermissionType } from "../shared/access";
+import type { BotContextBreakdown } from "../shared/ipc";
 import {
   type AccessScope,
   covers,
@@ -657,6 +658,33 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
           ),
         ],
       }),
+    };
+  }
+
+  async contextBreakdown(threadId: string): Promise<Omit<BotContextBreakdown, "botId"> | null> {
+    const runtime = this.#threads.get(threadId);
+    if (!runtime) return null;
+    const usage = await runtime.query.getContextUsage();
+    const kinds = usage.categories.filter(
+      (category) => category.tokens > 0 && !/free space|autocompact buffer/i.test(category.name),
+    );
+    const bySize = (a: { tokens: number }, b: { tokens: number }) => b.tokens - a.tokens;
+    return {
+      usedTokens: usage.totalTokens,
+      maxTokens: usage.maxTokens,
+      model: usage.model || null,
+      categories: kinds
+        .filter((category) => !category.isDeferred)
+        .map(({ name, tokens }) => ({ name, tokens }))
+        .sort(bySize),
+      notLoaded: kinds
+        .filter((category) => category.isDeferred)
+        .map(({ name, tokens }) => ({ name, tokens }))
+        .sort(bySize),
+      autoCompactAt:
+        usage.isAutoCompactEnabled && typeof usage.autoCompactThreshold === "number"
+          ? usage.autoCompactThreshold
+          : null,
     };
   }
 

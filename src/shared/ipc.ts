@@ -528,6 +528,24 @@ export interface AgentPromptQuestion {
   permission?: { kind: AskKind; detail: string };
 }
 
+/**
+ * What fills a bot's context right now, as its engine reports it.
+ * Claude Code says what each kind of content takes; Codex reports only the total.
+ */
+export interface BotContextBreakdown {
+  botId: string;
+  usedTokens: number;
+  maxTokens: number;
+  /** The model the reading is for, when the engine names it. */
+  model: string | null;
+  /** By kind, largest first. Empty when the engine reports only the total. */
+  categories: Array<{ name: string; tokens: number }>;
+  /** Kinds that are known to the bot but not loaded, so they take no room yet. */
+  notLoaded: Array<{ name: string; tokens: number }>;
+  /** The fill at which the engine folds the conversation by itself, when it says. */
+  autoCompactAt: number | null;
+}
+
 export interface RespondToPromptInput {
   requestId: string | number;
   answers: Record<string, string[]>;

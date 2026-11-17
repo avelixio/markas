@@ -270,6 +270,36 @@ describe("AgentService access levels", () => {
     expect(prompts()).toHaveLength(2);
   });
 
+  it("reports a bot's context: nothing yet, then the total its engine gave", async () => {
+    const { service, client, bot, threadId } = await setup();
+    expect(await service.contextBreakdown(bot.id)).toBeNull();
+    client.emit("notification", {
+      method: "thread/tokenUsage/updated",
+      params: {
+        threadId,
+        turnId: "turn-1",
+        tokenUsage: { last: { totalTokens: 52_000 }, modelContextWindow: 400_000 },
+      },
+    });
+    let seen = false;
+    const poll = setInterval(
+      () => void service.contextBreakdown(bot.id).then((value) => (seen = value !== null)),
+      20,
+    );
+    await waitFor(() => seen);
+    clearInterval(poll);
+    expect(await service.contextBreakdown(bot.id)).toEqual({
+      botId: bot.id,
+      usedTokens: 52_000,
+      maxTokens: 400_000,
+      model: null,
+      categories: [],
+      notLoaded: [],
+      autoCompactAt: null,
+    });
+    await expect(service.contextBreakdown("nobody")).rejects.toThrow("Bot not found.");
+  });
+
   it("refuses a request it cannot tie to a bot", async () => {
     const { client, prompts } = await setup();
     client.sendRequest({
