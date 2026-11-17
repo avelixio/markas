@@ -505,16 +505,18 @@ export const id: Record<MessageKey, string> = {
   "permission.protected.warning":
     "Di sinilah token masuk dan kunci Anda disimpan. Bot hampir tidak pernah membutuhkannya.",
   "permission.once": "Izinkan sekali",
-  "permission.chat": "Izinkan untuk obrolan ini",
+  "permission.chat": "Izinkan untuk sesi ini",
   "permission.deny": "Jangan izinkan",
-  "permission.chat.read": "Untuk obrolan ini: membaca di folder ini, sampai sesi obrolan berakhir.",
-  "permission.chat.write":
-    "Untuk obrolan ini: perubahan di folder ini, sampai sesi obrolan berakhir.",
-  "permission.chat.network": "Untuk obrolan ini: alat ini, sampai sesi obrolan berakhir.",
-  "permission.chat.tool": "Untuk obrolan ini: alat ini, sampai sesi obrolan berakhir.",
-  "permission.chat.command": "Perintah hanya diizinkan satu per satu.",
+  "permission.chat.read": "Untuk sesi ini: membaca di folder ini, sampai sesi obrolan berakhir.",
+  "permission.chat.write": "Untuk sesi ini: perubahan di folder ini, sampai sesi obrolan berakhir.",
+  "permission.chat.network": "Untuk sesi ini: alat ini, sampai sesi obrolan berakhir.",
+  "permission.chat.tool": "Untuk sesi ini: alat ini, sampai sesi obrolan berakhir.",
+  "permission.chat.command":
+    "Untuk sesi ini: setiap perintah yang dijalankan bot ini di obrolan ini, sampai sesi obrolan berakhir. Tiap perintah tetap dicatat di Logbook.",
   "permission.chat.protected": "Ini hanya diizinkan satu kali.",
   "logbook.action.bot.access": "Mengubah akses bot",
+  "logbook.action.access.allowed": "Mengizinkan permintaan bot",
+  "logbook.action.access.refused": "Menolak permintaan bot",
 
   "common.now": "baru saja",
   "common.bot": "Bot",

@@ -109,7 +109,7 @@ describe("AgentService access levels", () => {
     ).rejects.toThrow("no longer active");
   });
 
-  it("offers a command only one time at a time, and treats anything unclear as no", async () => {
+  it("treats anything unclear as no", async () => {
     const { service, client, threadId, prompts } = await setup();
     client.sendRequest({
       id: "ask-2",
@@ -119,10 +119,59 @@ describe("AgentService access levels", () => {
     await waitFor(() => prompts().length === 1);
     expect(prompts()[0]?.questions[0]?.options?.map((option) => option.label)).toEqual([
       "Allow once",
+      "Allow for this chat",
       "Don't allow",
     ]);
     await service.respondToPrompt({ requestId: "ask-2", answers: { permission: ["yes please"] } });
     expect(client.responses).toEqual([{ id: "ask-2", result: { decision: "deny" } }]);
+  });
+
+  it("allows commands for the session after one yes, and writes every decision down", async () => {
+    const { service, client, bot, threadId, prompts } = await setup();
+    const notes: Array<{ kind: string; subject: string; decision: string }> = [];
+    service.on("permission", (note) =>
+      notes.push({ kind: note.kind, subject: note.subject, decision: note.decision }),
+    );
+    const ask = (id: string, command: string[]) =>
+      client.sendRequest({
+        id,
+        method: "item/commandExecution/requestApproval",
+        params: { threadId, turnId: "turn-1", command },
+      });
+
+    ask("cmd-a", ["git", "status"]);
+    await waitFor(() => prompts().length === 1);
+    await service.respondToPrompt({
+      requestId: "cmd-a",
+      answers: { permission: ["Allow for this chat"] },
+    });
+    expect(client.responses.at(-1)).toEqual({
+      id: "cmd-a",
+      result: { decision: "acceptForSession" },
+    });
+
+    // The next command is answered without a card, whatever it is.
+    ask("cmd-b", [
+      "/usr/bin/curl",
+      "-H",
+      "Authorization: Bearer not-a-real-token",
+      "https://example.com",
+    ]);
+    await waitFor(() => client.responses.length === 2);
+    expect(client.responses.at(-1)).toEqual({ id: "cmd-b", result: { decision: "accept" } });
+    expect(prompts()).toHaveLength(1);
+
+    // The logbook gets the program only, never the arguments.
+    expect(notes).toEqual([
+      { kind: "command", subject: "git", decision: "chat" },
+      { kind: "command", subject: "curl", decision: "covered" },
+    ]);
+
+    // Changing the bot's access ends what was allowed for the session.
+    await service.updateBot({ botId: bot.id, access: "read" });
+    await service.updateBot({ botId: bot.id, access: "ask" });
+    ask("cmd-c", ["ls"]);
+    await waitFor(() => prompts().length === 2);
   });
 
   it("turns the engine's own approval requests into cards instead of approving them", async () => {

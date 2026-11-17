@@ -9,6 +9,8 @@ export const LOGBOOK_ACTIONS = [
   "bot.restored",
   "bot.purged",
   "bot.access",
+  "access.allowed",
+  "access.refused",
   "key.created",
   "key.changed",
   "key.shared",

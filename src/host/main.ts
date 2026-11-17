@@ -5,6 +5,7 @@ import {
   type AgentClientFactory,
   AgentService,
   createInstalledCliClient,
+  type PermissionNote,
 } from "../backend/agent-service";
 import { BotCreator } from "../backend/bot-creation";
 import { BotStore } from "../backend/bot-store";
@@ -57,6 +58,16 @@ import { ensureToken } from "./token";
 
 export const APP_NAME = "Markas";
 export const APP_VERSION: string = packageJson.version;
+/** How the logbook names each kind of request. */
+const PERMISSION_KIND_WORDS: Record<PermissionNote["kind"], string> = {
+  read: "read outside its folder",
+  write: "change files outside its folder",
+  command: "run a command",
+  network: "use the network",
+  tool: "use a tool",
+  protected: "open Markas's own data",
+};
+
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export interface RunningHost {
@@ -263,6 +274,26 @@ export async function startHost(
   const trashTimer = setInterval(() => void sweepTrash(), 60 * 60 * 1000);
   trashTimer.unref?.();
   followRounds(service, rounds, logbook);
+  // Every answer to a bot's request for permission is written down: who, what kind, and how
+  // it ended. A command is named by its program only, never with its arguments.
+  service.on("permission", (note: PermissionNote) => {
+    const what = PERMISSION_KIND_WORDS[note.kind];
+    const about = note.subject ? ` (${note.subject})` : "";
+    const how =
+      note.decision === "chat"
+        ? ", for this session"
+        : note.decision === "covered"
+          ? ", already allowed for this session"
+          : "";
+    void logbook
+      .record(
+        note.decision === "deny" ? "access.refused" : "access.allowed",
+        `${note.botName}: ${what}${about}${how}`,
+        "done",
+        note.decision === "covered" ? "bot" : "you",
+      )
+      .catch((error: unknown) => console.error("The logbook could not be written:", error));
+  });
   service.on("event", (event: { type?: string }) => {
     events.publish({ channel: "agent", payload: event });
     // A queue change may mean a round's turn has ended.

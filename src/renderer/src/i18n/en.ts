@@ -492,15 +492,20 @@ export const en = {
   "permission.protected.warning":
     "This is where your sign-in token and keys are kept. A bot almost never needs it.",
   "permission.once": "Allow once",
-  "permission.chat": "Allow for this chat",
+  "permission.chat": "Allow for this session",
   "permission.deny": "Don't allow",
-  "permission.chat.read": "For this chat: reading in this folder, until the chat's session ends.",
-  "permission.chat.write": "For this chat: changes in this folder, until the chat's session ends.",
-  "permission.chat.network": "For this chat: this tool, until the chat's session ends.",
-  "permission.chat.tool": "For this chat: this tool, until the chat's session ends.",
-  "permission.chat.command": "Commands are only ever allowed one at a time.",
+  "permission.chat.read":
+    "For this session: reading in this folder, until the chat's session ends.",
+  "permission.chat.write":
+    "For this session: changes in this folder, until the chat's session ends.",
+  "permission.chat.network": "For this session: this tool, until the chat's session ends.",
+  "permission.chat.tool": "For this session: this tool, until the chat's session ends.",
+  "permission.chat.command":
+    "For this session: every command this bot runs in this chat, until the chat's session ends. Each one is still written in the Logbook.",
   "permission.chat.protected": "This is only ever allowed one time.",
   "logbook.action.bot.access": "Changed a bot's access",
+  "logbook.action.access.allowed": "Allowed a bot's request",
+  "logbook.action.access.refused": "Refused a bot's request",
 
   "common.now": "now",
   "common.bot": "Bot",

@@ -86,6 +86,8 @@ interface AgentServiceEvents {
   event: [event: AgentEvent];
   /** What happened to a round's run that its history or the Logbook should keep. */
   round: [activity: RoundActivity];
+  /** What was decided about a bot's request for permission, for the Logbook. */
+  permission: [note: PermissionNote];
 }
 
 /** The round a queue entry carries out. */
@@ -117,6 +119,23 @@ interface PendingPrompt {
   decide?: (decision: PermissionDecision) => void;
   /** For a permission card the host itself put up: hands the person's choice back to it. */
   settle?: (decision: PermissionDecision) => void;
+}
+
+/** What the host is told about each decision on a bot's request. It holds names only. */
+export interface PermissionNote {
+  botId: string;
+  botName: string;
+  kind: AskKind;
+  /** The program a command starts, or the folder, tool or site a request names. */
+  subject: string;
+  /** covered: allowed earlier for the session, so nobody was asked this time. */
+  decision: PermissionDecision | "covered";
+}
+
+/** The program a command line starts, without its arguments, which may hold secrets. */
+function programOf(command: string): string {
+  const first = command.trim().split(/\s+/)[0] ?? "";
+  return first.split(/[\\/]/).pop()?.slice(0, 60) ?? "";
 }
 
 /** once: this one time. chat: until this chat's session ends. deny: no. */
@@ -259,6 +278,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   #standingFor: (roundId: string) => StandingGrant[] = () => [];
   /** Websites each bot was allowed to browse "for this chat". */
   readonly #siteGrants = new Map<string, Grant[]>();
+  /** Bots whose commands the person allowed until the chat's session ends. */
+  readonly #commandGrants = new Set<string>();
   /** Engines whose own model list was read, as opposed to Markas's built-in one. */
   readonly #listedProviders = new Set<AgentProvider>();
   #botDefaults: { model: AgentModelId; reasoningEffort: AgentReasoningEffort } | null = null;
@@ -455,6 +476,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
     if (previous?.access !== bot.access || (previous?.threadId && !bot.threadId)) {
       this.#siteGrants.delete(bot.id);
+      this.#commandGrants.delete(bot.id);
     }
     if (previous?.threadId && !bot.threadId) {
       this.#threadToBot.delete(previous.threadId);
@@ -483,6 +505,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     await this.#store.trashBot(botId);
     this.#snapshots.delete(botId);
     this.#siteGrants.delete(botId);
+    this.#commandGrants.delete(botId);
     this.#lastConversationSignatures.delete(botId);
     this.#drainingBots.delete(botId);
     this.#scheduledDrains.delete(botId);
@@ -804,6 +827,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     // The chats' sessions are over, and with them what was allowed "for this chat".
     this.#keys?.forgetAllChats();
     this.#siteGrants.clear();
+    this.#commandGrants.clear();
   }
 
   async #connect(
@@ -2118,13 +2142,19 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     canAllowForChat: boolean,
     finish: (decision: PermissionDecision) => unknown,
   ): void {
+    // The engines allow a command one at a time only, so for commands the host keeps the
+    // person's "for this session" itself and answers the next ones without asking again.
+    const hostKeeps = kind === "command" && !canAllowForChat;
     this.#askDecision(
       client,
       request,
       kind,
       detail,
-      canAllowForChat ? PERMISSION_CHAT_SCOPE[kind] : null,
-      (decision) => client.respond(request.id, finish(decision)),
+      canAllowForChat || hostKeeps ? PERMISSION_CHAT_SCOPE[kind] : null,
+      (decision, botId) => {
+        if (hostKeeps && decision === "chat" && botId) this.#commandGrants.add(botId);
+        client.respond(request.id, finish(decision));
+      },
     );
   }
 
@@ -2138,7 +2168,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     kind: AskKind,
     detail: string,
     chatScope: string | null,
-    decide: (decision: PermissionDecision) => void,
+    decide: (decision: PermissionDecision, botId?: string) => void,
   ): void {
     const threadId = getString(request.params, "threadId");
     const botId = threadId ? this.#threadToBot.get(threadId) : undefined;
@@ -2151,6 +2181,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
       decide("chat");
       return;
     }
+    if (kind === "command" && this.#commandGrants.has(bot.id)) {
+      // Already allowed for this session. It is still written down, one line per command.
+      this.#noteDecision(bot, kind, detail, "covered");
+      decide("once", bot.id);
+      return;
+    }
+    const answer = decide;
+    decide = (decision) => {
+      this.#noteDecision(bot, kind, detail, decision);
+      answer(decision, bot.id);
+    };
     const options = [
       { label: ALLOW_ONCE, description: "Only this one time." },
       ...(chatScope ? [{ label: ALLOW_CHAT, description: chatScope }] : []),
@@ -2205,7 +2246,13 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (!bot) return Promise.resolve("deny");
     const requestId = `host-ask-${randomUUID()}`;
     return new Promise((resolve) => {
-      this.#pendingPrompts.set(requestId, { id: requestId, settle: resolve });
+      this.#pendingPrompts.set(requestId, {
+        id: requestId,
+        settle: (decision) => {
+          this.#noteDecision(bot, kind, detail, decision);
+          resolve(decision);
+        },
+      });
       this.#emit({
         type: "prompt",
         requestId,
@@ -2230,6 +2277,26 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         ],
       });
     });
+  }
+
+  /**
+   * Tells the host what was decided about a bot's request, for the logbook.
+   * Only names go out: the kind of request and, for a command, the program it starts.
+   */
+  #noteDecision(
+    bot: BotSummary,
+    kind: AskKind,
+    detail: string,
+    decision: PermissionDecision | "covered",
+  ): void {
+    this.emit("permission", {
+      botId: bot.id,
+      botName: bot.name,
+      kind,
+      subject:
+        kind === "command" ? programOf(detail) : (detail.split("\n")[0]?.slice(0, 120) ?? ""),
+      decision,
+    } satisfies PermissionNote);
   }
 
   #sessionAccess(bot: BotSummary): Record<string, unknown> {
@@ -2534,7 +2601,7 @@ const PERMISSION_QUESTION: Record<AskKind, string> = {
 const PERMISSION_CHAT_SCOPE: Record<AskKind, string> = {
   read: "Reading in this folder, until this chat's session ends.",
   write: "Changes in this folder, until this chat's session ends.",
-  command: "",
+  command: "Every command in this chat, until this chat's session ends.",
   network: "This tool, until this chat's session ends.",
   tool: "This tool, until this chat's session ends.",
   protected: "",

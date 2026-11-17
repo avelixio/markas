@@ -69,7 +69,9 @@ describe("PermissionCard", () => {
     expect(card).toHaveTextContent("Atlas wants to run a command on this computer");
     expect(card).toHaveTextContent("git status");
     // A command is never offered for a whole chat.
-    expect(screen.queryByRole("button", { name: "Allow for this chat" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Allow for this session" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Allow once" }));
     expect(onSubmit).toHaveBeenCalledWith({ permission: ["Allow once"] });
   });
@@ -92,7 +94,7 @@ describe("PermissionCard", () => {
         onSubmit={onSubmit}
       />
     ));
-    expect(screen.getByRole("button", { name: "Allow for this chat" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Allow for this session" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Don't allow" }));
     expect(onSubmit).toHaveBeenCalledWith({ permission: ["Don't allow"] });
   });
