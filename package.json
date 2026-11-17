@@ -2,7 +2,15 @@
   "name": "markas",
   "productName": "Markas",
   "version": "0.1.0",
-  "description": "A local-first multi-agent workspace host for Claude Code, Codex and ACP engines, served as a web UI.",
+  "description": "A headquarters for your AI bots: it runs on your own computer and drives them through Claude Code and Codex.",
+  "homepage": "https://github.com/avelixio/markas#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avelixio/markas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/avelixio/markas/issues"
+  },
   "author": {
     "name": "Markas contributors"
   },

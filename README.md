@@ -14,7 +14,7 @@ It runs on your own computer, drives bots through the Claude Code and Codex tool
 [![Watch the 48 second tour of Markas](docs/media/video-poster.jpg)](https://github.com/avelixio/markas/releases/download/v0.1.0/markas-tour-0.1.0.mp4)
 
 The tour is recorded from the running app, with sound.
-Its narration is read by Kitten TTS (KittenML).
+Its narration is read by [Kitten TTS](https://github.com/KittenML/KittenTTS) by KittenML.
 
 | | |
 | --- | --- |
@@ -39,7 +39,7 @@ Its narration is read by Kitten TTS (KittenML).
 - Optimizer: smaller conversations and a count of the tokens saved.
 - Logbook: a record of what was done, by whom, and how it ended.
 - Notifications for what waits on you, and Undo for a deleted bot, which can be restored for 30 days.
-- Start at login and keep running in the background.
+- Keep running in the background, and start at login once you run `markas install`.
 - Tell you when the window loses the host, and reconnect by itself.
 - Use Markas in English or Bahasa Indonesia.
 
@@ -188,5 +188,9 @@ On Windows, run it inside WSL.
 
 Markas is licensed under Apache-2.0.
 See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+The packages also contain other software under its own terms, listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md); the Claude Agent SDK among them is Anthropic's and is not open source.
+
+To report a security problem, see [SECURITY.md](SECURITY.md).
+To help, see [CONTRIBUTING.md](CONTRIBUTING.md); what changed is in [CHANGELOG.md](CHANGELOG.md).
 
 Inspired by OpenBot.

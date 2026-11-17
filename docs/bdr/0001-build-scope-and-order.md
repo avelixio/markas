@@ -6,7 +6,8 @@
 
 ## Decisions
 
-1. Markas is built on Bun and is licensed under Apache-2.0; only Apache-2.0 compatible code is used.
+1. Markas is built on Bun, and its own code is licensed under Apache-2.0.
+The software it bundles keeps its own terms, listed in `THIRD-PARTY-NOTICES.md`; the Claude Agent SDK among it is Anthropic's and is not open source.
 2. Vitest is the test runner, the vault store is built for Markas, and the browser is driven with playwright-core.
 3. No bot is built by hand in the code.
 The app must let bots be created and set up from inside the app.
@@ -26,6 +27,8 @@ The plan targets macOS (launchd, Keychain), Windows and Linux.
 Platform-specific pieces sit behind small interfaces with a macOS implementation and, where cheap, Windows and Linux ones, so the host runs on all three.
 
 ## Open decisions
+
+Both were open when this was written and are taken up in BDR 0002.
 
 - Whether the sites bots sign in to can use TOTP or service accounts.
 - Standing approvals for routine sends.

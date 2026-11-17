@@ -64,6 +64,7 @@ for (const name of names) {
   await cp(join(root, "bots"), join(folder, "bots"), { recursive: true });
   await cp(join(root, "LICENSE"), join(folder, "LICENSE"));
   await cp(join(root, "NOTICE"), join(folder, "NOTICE"));
+  await cp(join(root, "THIRD-PARTY-NOTICES.md"), join(folder, "THIRD-PARTY-NOTICES.md"));
   await writeFile(join(folder, "QUICKSTART.txt"), QUICK_START, "utf8");
   const archive = join(release, `${folderName}.zip`);
   await rm(archive, { force: true });

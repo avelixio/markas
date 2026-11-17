@@ -1,6 +1,6 @@
 # ADR 0007: The bot browser
 
-- Status: accepted
+- Status: accepted, changed in part by ADR 0014 (the browser has no window of its own any more)
 - Date: 2026-11-12
 
 ## Context

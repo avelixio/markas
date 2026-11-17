@@ -1,6 +1,9 @@
-# Feature checklist
+# Status
 
-Every feature is finished one at a time, in this order.
+What each part of Markas does today, and what is not finished.
+This is the project's working list, kept honest on purpose: "Partly" means exactly what the cell says.
+The Frames column names drawings of the screens, which are generated from `design/` (see `design/README.md`).
+
 A feature is done only when all four columns are ticked:
 
 - **Design**: the screens exist in `design/`, in English and Bahasa Indonesia.

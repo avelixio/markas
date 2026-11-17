@@ -28,6 +28,7 @@ module.exports = {
     { from: "build/icon.png", to: "build/icon.png" },
     { from: "LICENSE", to: "LICENSE" },
     { from: "NOTICE", to: "NOTICE" },
+    { from: "THIRD-PARTY-NOTICES.md", to: "THIRD-PARTY-NOTICES.md" },
   ],
   asar: true,
   win: { target: ["nsis", "zip"], icon: "build/icon.png" },
