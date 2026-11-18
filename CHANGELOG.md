@@ -14,7 +14,7 @@ Found by testing 0.1.1 on a real computer.
 - Opening a bot whose engine is missing no longer keeps Markas looking for that engine without end.
 - Stopping Markas waits for the end of a turn to be saved.
 - Deleting a bot on Claude Code or OpenCode ends that bot's engine session, instead of leaving it running until Markas stops.
-- A Keyring key can be named after its site, such as "app.example.com", and a new key is named that way by default. Capitals in a name are written small instead of being refused.
+- A Keyring key can have any name, such as "web example" or "app.example.com". A new key starts with its site as its name, and capitals or spaces no longer make a name refused.
 
 ## 0.1.1 - 2026-11-18
 

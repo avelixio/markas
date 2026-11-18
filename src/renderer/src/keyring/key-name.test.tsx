@@ -17,8 +17,8 @@ describe("keyNameFor", () => {
     expect(keyNameFor("")).toBe("login");
   });
 
-  it("always makes a name the Keyring takes", () => {
-    const rule = /^(?=.{1,253}$)[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/;
+  it("starts a key with a short, plain name", () => {
+    const rule = /^(?=.{1,100}$)[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/;
     for (const site of [
       "https://a.example.com",
       `https://${"x".repeat(60)}.${"y".repeat(60)}.${"z".repeat(60)}.${"w".repeat(60)}.example`,
@@ -33,6 +33,7 @@ describe("keyNameFor", () => {
 describe("uniqueKeyName", () => {
   it("adds a number for a second key on the same site", () => {
     expect(uniqueKeyName("app.example.com", [])).toBe("app.example.com");
+    expect(uniqueKeyName("app.example.com", ["App.Example.com"])).toBe("app.example.com-2");
     expect(uniqueKeyName("app.example.com", ["app.example.com"])).toBe("app.example.com-2");
     expect(uniqueKeyName("app.example.com", ["app.example.com", "app.example.com-2"])).toBe(
       "app.example.com-3",
@@ -69,5 +70,12 @@ describe("the key name in the key form", () => {
     fireEvent.input(nameField(), { target: { value: "" } });
     fireEvent.input(siteField(), { target: { value: "https://metrics.example.com" } });
     expect(nameField().value).toBe("metrics.example.com");
+  });
+
+  it("takes any name the person writes", () => {
+    open();
+    fireEvent.input(siteField(), { target: { value: "https://app.example.com" } });
+    fireEvent.input(nameField(), { target: { value: "Web Example" } });
+    expect(nameField().value).toBe("Web Example");
   });
 });

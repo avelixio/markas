@@ -1,10 +1,10 @@
-/** The longest key name the Keyring takes: as long as a host can be. */
-const MAX_NAME = 253;
+/** The longest key name the Keyring takes. */
+const MAX_NAME = 100;
 
 /**
- * A name for a new key, made from its website: the site's own host, so "https://app.example.com"
- * gives "app.example.com". A leading "www." and the port are left out. Anything the Keyring
- * does not take in a name becomes a dash.
+ * The name a new key starts with, made from its website: the site's own host, so
+ * "https://app.example.com" gives "app.example.com". A leading "www." and the port are left out.
+ * It is only a starting point: the person can name a key anything, such as "web example".
  */
 export function keyNameFor(site: string): string {
   let host: string;
@@ -30,10 +30,11 @@ export function keyNameFor(site: string): string {
  * "app.example.com-2", and so on, for a second key on the same site.
  */
 export function uniqueKeyName(name: string, taken: readonly string[]): string {
-  const used = new Set(taken);
-  if (!used.has(name)) return name;
+  // The Keyring treats "App.example.com" and "app.example.com" as one name.
+  const used = new Set(taken.map((entry) => entry.toLowerCase()));
+  if (!used.has(name.toLowerCase())) return name;
   for (let count = 2; ; count += 1) {
     const candidate = `${name.slice(0, MAX_NAME - String(count).length - 1)}-${count}`;
-    if (!used.has(candidate)) return candidate;
+    if (!used.has(candidate.toLowerCase())) return candidate;
   }
 }

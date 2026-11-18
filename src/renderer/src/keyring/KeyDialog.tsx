@@ -106,7 +106,7 @@ export function KeyDialog(props: KeyDialogProps) {
     setSaving(true);
     setError(null);
     const draft: KeyDraft = {
-      name: name().trim().toLowerCase(),
+      name: name().trim(),
       kind: kind(),
       fillPolicy: fillPolicy(),
       sharedWith: sharedWith(),
@@ -192,6 +192,7 @@ export function KeyDialog(props: KeyDialogProps) {
               class="mk-input mk-input--mono"
               value={name()}
               onInput={(event) => changeName(event.currentTarget.value)}
+              maxLength={100}
               autocomplete="off"
               spellcheck={false}
               required

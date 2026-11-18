@@ -111,11 +111,26 @@ export class KeyringError extends Error {
   }
 }
 
-/**
- * A key name: lower-case letters, digits and dashes, in parts joined by single dots, so a
- * site's own host such as "app.example.com" is a name as it is. At most as long as a host.
- */
-const NAME_PATTERN = /^(?=.{1,253}$)[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/;
+/** The longest key name. A name is otherwise the person's own: "web example" is fine. */
+const NAME_MAX = 100;
+/** True when the text holds a character that is not shown, such as a line break or a tab. */
+function hasControlCharacter(text: string): boolean {
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0;
+    if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return true;
+  }
+  return false;
+}
+
+/** A key name as written by the person: trimmed, with each run of spaces made one space. */
+function cleanName(name: string): string {
+  return name.normalize("NFC").trim().replace(/\s+/g, " ");
+}
+
+/** How two names are compared: "Web Example" and "web example" are the same key. */
+function sameName(left: string, right: string): boolean {
+  return cleanName(left).toLowerCase() === cleanName(right).toLowerCase();
+}
 const VARIABLE_PATTERN = /^[A-Z_][A-Z0-9_]{0,63}$/;
 
 /**
@@ -291,9 +306,8 @@ export class KeyringStore {
   }
 
   #byName(botId: string, name: string): StoredKey {
-    // Names are kept in small letters, so a bot that writes "App.Example.com" still finds the key.
-    const wanted = name.trim().toLowerCase();
-    const stored = this.#state.keys.find((key) => key.name === wanted);
+    // Capitals and extra spaces do not matter, so a bot that writes "Web Example" still finds the key.
+    const stored = this.#state.keys.find((key) => sameName(key.name, name));
     // A key that exists but is not shared is reported exactly like one that does not exist,
     // so a bot cannot learn which names are taken.
     if (!stored?.sharedWith.includes(botId)) {
@@ -323,15 +337,16 @@ export class KeyringStore {
   }
 
   #validate(input: CreateKeyInput, ownId: string | null) {
-    // Capitals are not refused, only written small: "App.Example.com" is "app.example.com".
-    const name = input.name.trim().toLowerCase();
-    if (!NAME_PATTERN.test(name)) {
+    // Any name the person can read is taken as they wrote it.
+    const name = cleanName(input.name);
+    if (!name) throw new KeyringError("A key needs a name.", "invalid");
+    if (name.length > NAME_MAX || hasControlCharacter(name)) {
       throw new KeyringError(
-        'A key name uses letters, digits, dashes and dots, such as "app.example.com", and starts with a letter or digit.',
+        `A key name is at most ${NAME_MAX} characters, with no hidden characters.`,
         "invalid",
       );
     }
-    if (this.#state.keys.some((key) => key.name === name && key.id !== ownId)) {
+    if (this.#state.keys.some((key) => sameName(key.name, name) && key.id !== ownId)) {
       throw new KeyringError(`A key named "${name}" already exists.`, "name-taken");
     }
     if (!KEY_KINDS.includes(input.kind)) throw new KeyringError("Unknown key kind.", "invalid");

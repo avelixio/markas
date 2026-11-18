@@ -169,13 +169,22 @@ describe("keyring", () => {
     );
   });
 
-  it("takes a site's own host as a key name, and writes capitals small", async () => {
+  it("takes any name the person writes, as they wrote it", async () => {
     const { keyring } = await openKeyring();
     const base = { kind: "login" as const, origin: "app.example.com", username: "u", value: "p" };
-    const dotted = await keyring.create({ ...base, name: "app.example.com" });
-    expect(dotted.name).toBe("app.example.com");
-    const capitals = await keyring.create({ ...base, name: " Admin.Example.com " });
-    expect(capitals.name).toBe("admin.example.com");
+    for (const [written, kept] of [
+      ["app.example.com", "app.example.com"],
+      ["  Web   Example ", "Web Example"],
+      ["Admin.Example.com", "Admin.Example.com"],
+      ["login\tfor\nwork", "login for work"],
+      ["café key", "café key"],
+    ]) {
+      expect((await keyring.create({ ...base, name: written })).name).toBe(kept);
+    }
+    // Capitals and spaces do not make another name.
+    await expect(keyring.create({ ...base, name: "web example" })).rejects.toMatchObject({
+      code: "name-taken",
+    });
     await expect(keyring.create({ ...base, name: "APP.example.com" })).rejects.toMatchObject({
       code: "name-taken",
     });
@@ -193,10 +202,7 @@ describe("keyring", () => {
     await expect(keyring.create({ ...base, name: "one" })).rejects.toMatchObject({
       code: "name-taken",
     });
-    await expect(keyring.create({ ...base, name: "Bad Name" })).rejects.toMatchObject({
-      code: "invalid",
-    });
-    for (const bad of [".app.example.com", "app..example.com", "app.example.com.", "a/b"]) {
+    for (const bad of ["   ", "x".repeat(101), "bell\u0007"]) {
       await expect(keyring.create({ ...base, name: bad })).rejects.toMatchObject({
         code: "invalid",
       });

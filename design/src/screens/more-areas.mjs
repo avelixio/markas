@@ -483,7 +483,7 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
           field(
             "Name",
             input("admin.example.com", { grow: true, mono: true }),
-            "Filled in from the website. You can change it.",
+            "Starts as the website. Any name works.",
           ),
           field(
             "Website",

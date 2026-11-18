@@ -125,11 +125,12 @@ A key that is not shared with a bot is reported exactly like a key that does not
 ### A key is named after its site by default
 
 Added on 2026-11-18, at the owner's request: a name such as "app.example.com" was refused, while that is the name a person expects.
-- A key name is lower-case letters, digits and dashes, in parts joined by single dots, at most 253 characters, like a host.
-- Capitals are not refused: the name is written in small letters when it is saved, and a bot's request is matched the same way.
+- A key name is the person's own: any text up to 100 characters, such as "web example" or "app.example.com".
+Spaces at the ends are dropped, a run of spaces, tabs or line breaks becomes one space, and only other hidden characters are refused.
+- The name is kept as written. Capitals and spaces do not make another name: "Web Example" and "web example" are one key, and a bot's request is matched the same way.
 - A new key's name follows its website until the person writes a name of their own: "https://app.example.com/login" gives "app.example.com", and a leading "www." and the port are left out.
 - A second key for the same site gets "-2", "-3" and so on.
-- The rule lives in `NAME_PATTERN` in `src/backend/keyring/keyring-store.ts`, the name from a site in `src/renderer/src/keyring/key-name.ts`.
+- The rule lives in `cleanName` and `sameName` in `src/backend/keyring/keyring-store.ts`, the name from a site in `src/renderer/src/keyring/key-name.ts`.
 
 ## Consequences
 

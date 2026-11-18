@@ -142,8 +142,8 @@ const componentStates = sheet(
       [
         "Error",
         col({ gap: 4 }, [
-          field("admin..example.com", outline(c.danger)),
-          t("Use letters, digits, dashes and single dots.", "small", c.danger),
+          field("", outline(c.danger)),
+          t("A key needs a name.", "small", c.danger),
         ]),
       ],
       ["Disabled", field("admin-read", { opacity: 0.4 })],

@@ -76,7 +76,7 @@ export const id: Record<MessageKey, string> = {
   "keyring.form.kind": "Jenis",
   "keyring.form.name": "Nama",
   "keyring.form.name.hint":
-    "Bot meminta kunci dengan nama ini. Diisi dari situsnya, misalnya app.example.com, dan bisa kamu ubah.",
+    "Bot meminta kunci dengan nama ini. Awalnya diisi dari situsnya, misalnya app.example.com. Nama apa saja boleh, misalnya web example.",
   "keyring.form.origin": "Situs",
   "keyring.form.origin.hint":
     "Hanya situs yang persis ini. metrics.example.com dan admin.example.com adalah situs yang berbeda.",
