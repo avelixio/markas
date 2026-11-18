@@ -1,8 +1,8 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { constants } from "node:fs";
 import { access } from "node:fs/promises";
 import { homedir } from "node:os";
-import { extname, join, win32 } from "node:path";
+import { extname, join, posix, win32 } from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
@@ -200,15 +200,12 @@ async function collectCandidates(
     }
     candidates.push(...windowsFallbackPaths(command));
   } else {
-    try {
-      const { stdout } = await execFileAsync("/bin/zsh", ["-lic", `command -v ${command}`], {
-        timeout: 5_000,
-        maxBuffer: 64 * 1024,
-      });
-      if (stdout.trim()) candidates.push(stdout.trim());
-    } catch {
-      // Packaged macOS apps often have a restricted PATH; known locations are checked next.
-    }
+    candidates.push(...posixPathCandidates(command, process.env.PATH));
+    // An app opened from the Dock or a desktop menu gets a short PATH, so the person's own login
+    // shell is asked as well: it reads the files where installers add their folders.
+    const shell = loginShellFor(process.platform, process.env.SHELL);
+    const found = lastAbsolutePath(await askLoginShell(shell, `command -v ${command}`));
+    if (found) candidates.push(found);
     candidates.push(...posixFallbackPaths(command));
   }
 
@@ -249,11 +246,83 @@ export function windowsFallbackPaths(
   return paths;
 }
 
+/**
+ * Runs one command in the person's interactive login shell and gives back what it printed, or
+ * nothing when it fails or takes longer than five seconds.
+ *
+ * An interactive shell takes over the terminal it shares with Markas. When Markas runs in the
+ * background of a terminal, that stops the shell and Markas with it, and a stopped shell never
+ * answers a polite SIGTERM. So the shell gets a session of its own, with no terminal and nothing
+ * to read, and is killed outright if it is late.
+ */
+function askLoginShell(shell: string, script: string): Promise<string> {
+  return new Promise((resolve) => {
+    let output = "";
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(shell, ["-lic", script], {
+        detached: true,
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+    } catch {
+      resolve("");
+      return;
+    }
+    const timer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+    child.stdout?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk: string) => {
+      if (output.length < 64 * 1024) output += chunk;
+    });
+    const finish = (text: string) => {
+      clearTimeout(timer);
+      resolve(text);
+    };
+    child.on("error", () => finish(""));
+    child.on("close", (code) => finish(code === 0 ? output : ""));
+  });
+}
+
+/** The program in each folder of PATH, in order, the way a terminal would look for it. */
+export function posixPathCandidates(
+  command: CliCommand,
+  pathVariable: string | undefined,
+): string[] {
+  return (pathVariable ?? "")
+    .split(":")
+    .map((folder) => folder.trim())
+    .filter((folder) => folder.startsWith("/"))
+    .map((folder) => posix.join(folder, command));
+}
+
+/**
+ * The person's own shell, which knows where their installers put programs. Most Linux computers
+ * have no zsh, so it is only assumed on macOS, where it is the default.
+ */
+export function loginShellFor(platform: NodeJS.Platform, shell: string | undefined): string {
+  const own = shell?.trim();
+  if (own?.startsWith("/")) return own;
+  return platform === "darwin" ? "/bin/zsh" : "/bin/sh";
+}
+
+/** A shell's startup files can print lines of their own; the answer is the last full path. */
+export function lastAbsolutePath(output: string): string | null {
+  const lines = output
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith("/"));
+  return lines.at(-1) ?? null;
+}
+
 function posixFallbackPaths(command: CliCommand): string[] {
   const paths = [join(homedir(), ".local", "bin", command)];
   if (command === "claude") paths.push(join(homedir(), ".claude", "local", "claude"));
   if (command === "opencode") paths.push(join(homedir(), ".opencode", "bin", "opencode"));
-  paths.push(`/opt/homebrew/bin/${command}`, `/usr/local/bin/${command}`);
+  paths.push(
+    join(homedir(), ".bun", "bin", command),
+    `/opt/homebrew/bin/${command}`,
+    `/usr/local/bin/${command}`,
+    `/usr/bin/${command}`,
+  );
   return paths;
 }
 

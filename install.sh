@@ -104,7 +104,16 @@ case ":${PATH}:" in
   *":${BIN_DIR}:"*) say "Run \`markas\` to start it. It opens in your browser." ;;
   *)
     say "Add ${BIN_DIR} to your PATH, for example:"
-    say "  echo 'export PATH=\"${BIN_DIR}:\$PATH\"' >> ~/.zshrc && exec zsh"
+    # The advice names the person's own shell: most Linux computers have no zsh.
+    case "${SHELL:-}" in
+      */zsh) say "  echo 'export PATH=\"${BIN_DIR}:\$PATH\"' >> ~/.zshrc && exec zsh" ;;
+      */fish) say "  fish_add_path ${BIN_DIR}" ;;
+      */bash)
+        if [ "$os" = macos ]; then rc="~/.bash_profile"; else rc="~/.bashrc"; fi
+        say "  echo 'export PATH=\"${BIN_DIR}:\$PATH\"' >> ${rc} && exec bash"
+        ;;
+      *) say "  echo 'export PATH=\"${BIN_DIR}:\$PATH\"' >> ~/.profile, then log in again" ;;
+    esac
     say "Then run \`markas\` to start it. It opens in your browser."
     ;;
 esac
