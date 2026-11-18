@@ -3,6 +3,8 @@
 Markas is a headquarters for your AI teammates.
 It runs on your own computer, drives bots through the Claude Code, Codex and OpenCode tools you already use, and gives you one place to talk to them, queue work and see what each one is doing.
 
+Website: https://markas-livid.vercel.app
+
 > [!WARNING]
 > Markas is an early preview (version 0.1.2).
 > A new bot asks before it acts outside its own folder, but a bot you give full access can change and delete files on your computer.

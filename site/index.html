@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Markas - a headquarters for your AI teammates</title>
+    <meta
+      name="description"
+      content="Markas runs on your own computer and drives bots through the Claude Code, Codex and OpenCode you already use. Free and open source."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F6F2" media="(prefers-color-scheme: light)" />
+    <meta property="og:title" content="Markas - a headquarters for your AI teammates" />
+    <meta
+      property="og:description"
+      content="Talk to your bots, queue work and put them on a schedule, all from your own computer."
+    />
+    <meta property="og:image" content="/media/chats.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/main.js" defer></script>
+    <!-- Page views only, counted by Vercel without cookies. Nothing is sent from the Markas app. -->
+    <script src="/_vercel/insights/script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to the content</a>
+
+    <header data-component="SiteHeader" class="wrap header">
+      <a data-slot="brand" class="brand" href="/" aria-label="Markas home">
+        <img src="/icon.svg" alt="" width="28" height="28" />
+        <span>Markas</span>
+      </a>
+      <nav data-slot="links" class="links" aria-label="Page">
+        <a href="#tour">Tour</a>
+        <a href="#areas">What it does</a>
+        <a href="https://github.com/avelixio/markas">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section data-component="Hero" class="wrap hero" aria-labelledby="hero-title">
+        <div data-slot="roster" class="roster" aria-hidden="true">
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil mint"><rect y="33.3" width="100" height="33.4" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil amber"><circle cx="50" cy="50" r="21" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil coral"><rect width="50" height="50" /><rect x="50" y="50" width="50" height="50" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil sky"><path d="M0 100L100 0V100Z" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil violet"><rect y="39" width="100" height="22" /><rect x="39" width="22" height="100" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil rose"><path fill-rule="evenodd" d="M24 24H76V76H24ZM37 37V63H63V37Z" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil lime"><rect x="20" width="20" height="100" /><rect x="60" width="20" height="100" /></svg>
+          <svg aria-hidden="true" viewBox="0 0 100 100" class="sigil sand"><path d="M0 0L50 50L100 0V36L50 86L0 36Z" /></svg>
+        </div>
+        <h1 id="hero-title" data-slot="title">A headquarters for your AI teammates, on your own computer.</h1>
+        <p data-slot="lead" class="lead">
+          Markas drives bots through the Claude Code, Codex and OpenCode you already use. Talk to each one, queue
+          work, put them on a schedule and see what every bot is doing, in one window.
+        </p>
+
+        <div data-component="DownloadChoice" class="actions">
+          <a data-slot="primary" id="download" class="button primary" href="https://github.com/avelixio/markas/releases/latest">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" /></svg>
+            <span id="download-label">Download Markas</span>
+          </a>
+          <div data-component="InstallCommand" class="command" id="command">
+            <code data-slot="text" id="command-text">curl -fsSL https://raw.githubusercontent.com/avelixio/markas/main/install.sh | sh</code>
+            <button data-slot="copy" type="button" class="copy" id="copy" aria-describedby="copy-status">Copy</button>
+            <span id="copy-status" class="visually-hidden" role="status" aria-live="polite"></span>
+          </div>
+        </div>
+        <p data-slot="other" class="note" id="other-systems">
+          Free and open source. <span id="version">Version 0.1.2</span>, an early preview.
+          <a href="https://github.com/avelixio/markas/releases/latest">All downloads</a>
+        </p>
+      </section>
+
+      <figure data-component="HeroShot" class="wrap shot hero-shot">
+        <img
+          src="/media/chats.png"
+          width="1920"
+          height="1080"
+          alt="The Markas window: a list of bots on the left, and a chat with a bot named Atlas about a newsletter"
+          fetchpriority="high"
+        />
+      </figure>
+
+      <section data-component="Tour" id="tour" class="wrap section" aria-labelledby="tour-title">
+        <h2 id="tour-title">A 48 second tour</h2>
+        <p class="section-lead">Recorded from the running app, with sound and captions. It plays only when you start it.</p>
+        <div class="shot video">
+          <!-- biome-ignore lint/a11y/useMediaCaption: the captions are part of the picture -->
+          <video controls preload="none" poster="/media/video-poster.jpg" width="1280" height="720" playsinline>
+            <source src="/media/markas-tour-0.1.0.mp4" type="video/mp4" />
+            <a href="/media/markas-tour-0.1.0.mp4">Download the tour video</a>
+          </video>
+        </div>
+      </section>
+
+      <section data-component="Areas" id="areas" class="wrap section" aria-labelledby="areas-title">
+        <h2 id="areas-title">What it does</h2>
+        <ul class="areas">
+          <li data-slot="area">
+            <img src="/media/chats.png" width="1920" height="1080" loading="lazy" alt="A chat with a bot, beside the list of bots" />
+            <h3>Chats</h3>
+            <p>Every bot has its own job, model and conversation. Queue messages while it works.</p>
+          </li>
+          <li data-slot="area">
+            <img src="/media/access.png" width="1920" height="1080" loading="lazy" alt="A bot's settings with the three access levels" />
+            <h3>Access</h3>
+            <p>A new bot asks before it acts outside its own folder. You decide how far each one may go.</p>
+          </li>
+          <li data-slot="area">
+            <img src="/media/rounds.png" width="1920" height="1080" loading="lazy" alt="The next 7 days of scheduled rounds" />
+            <h3>Rounds</h3>
+            <p>Work that runs on a schedule, with the next 7 days in view.</p>
+          </li>
+          <li data-slot="area">
+            <img src="/media/rooms.png" width="1920" height="1080" loading="lazy" alt="Two rooms, each with a lead and members" />
+            <h3>Rooms</h3>
+            <p>Put a question to a team, and its lead decides who helps.</p>
+          </li>
+          <li data-slot="area">
+            <img src="/media/optimizer.png" width="1920" height="1080" loading="lazy" alt="The Optimizer page with what saves tokens" />
+            <h3>Optimizer</h3>
+            <p>Smaller conversations, and a count of the tokens saved.</p>
+          </li>
+          <li data-slot="area">
+            <img src="/media/logbook.png" width="1920" height="1080" loading="lazy" alt="The Logbook, a list of what was done" />
+            <h3>Logbook</h3>
+            <p>What was done, by whom, and how it ended.</p>
+          </li>
+        </ul>
+        <p class="more">
+          Also a browser for bots, a Keyring for logins on one exact website each, and English or Bahasa Indonesia.
+          <a href="https://github.com/avelixio/markas/blob/main/docs/features.md">The full list</a>
+        </p>
+      </section>
+
+      <section data-component="LocalFirst" class="wrap section local" aria-labelledby="local-title">
+        <div data-slot="text">
+          <h2 id="local-title">Everything stays on your computer.</h2>
+          <p>
+            There is no Markas account, cloud service or telemetry. Your bots still reach the services their engines
+            use, such as Anthropic and OpenAI, or the model services you set up in OpenCode.
+          </p>
+        </div>
+        <dl data-slot="engines" class="engines">
+          <div><dt>Claude Code</dt><dd>Anthropic's coding agent</dd></div>
+          <div><dt>Codex</dt><dd>OpenAI's coding agent</dd></div>
+          <div><dt>OpenCode</dt><dd>Any model your OpenCode has</dd></div>
+        </dl>
+      </section>
+
+      <section data-component="Install" class="wrap section" aria-labelledby="install-title">
+        <h2 id="install-title">Install</h2>
+        <div class="install">
+          <div data-slot="system">
+            <h3>Windows</h3>
+            <p>The installer from the <a href="https://github.com/avelixio/markas/releases/latest">latest release</a>. If Windows says it protected your PC, choose More info, then Run anyway.</p>
+          </div>
+          <div data-slot="system">
+            <h3>macOS</h3>
+            <p>The disk image for Apple silicon or Intel. If macOS could not verify it, choose Open Anyway in System Settings, Privacy &amp; Security. Or the command line:</p>
+            <pre><code>brew tap avelixio/markas https://github.com/avelixio/markas
+brew install avelixio/markas/markas</code></pre>
+          </div>
+          <div data-slot="system">
+            <h3>Linux</h3>
+            <p>The AppImage, or the install script, which checks the download against the release's SHA-256 list:</p>
+            <pre><code>curl -fsSL https://raw.githubusercontent.com/avelixio/markas/main/install.sh | sh</code></pre>
+          </div>
+        </div>
+        <p class="more">Bots need Claude Code, Codex or OpenCode. Markas finds them, and can install and connect them for you.</p>
+      </section>
+
+      <aside data-component="PreviewNote" class="wrap preview" aria-label="Early preview">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 14.5 13.5h-13ZM8 6.5v3.5M8 12v.01" /></svg>
+        <p>
+          Markas is an early preview. A new bot asks before it acts outside its own folder, but a bot you give full
+          access can change and delete files on your computer. Run only bots and tasks you trust.
+        </p>
+      </aside>
+    </main>
+
+    <footer data-component="SiteFooter" class="wrap footer">
+      <p>Markas is open source under the Apache 2.0 license.</p>
+      <nav aria-label="Project">
+        <a href="https://github.com/avelixio/markas">GitHub</a>
+        <a href="https://github.com/avelixio/markas/releases">Releases</a>
+        <a href="https://github.com/avelixio/markas/blob/main/CHANGELOG.md">Changelog</a>
+      </nav>
+    </footer>
+  </body>
+</html>
