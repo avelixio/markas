@@ -133,9 +133,8 @@ export function App() {
     botId: string;
     nonce: number;
   } | null>(null);
-  const [pendingPrompts, setPendingPrompts] = createSignal<Record<string, PromptEvent | undefined>>(
-    {},
-  );
+  /** Each bot's open cards, oldest first. The first is the one shown. */
+  const [pendingPrompts, setPendingPrompts] = createSignal<Record<string, PromptEvent[]>>({});
   const [appInfo, setAppInfo] = createSignal<AppInfo | null>(null);
   const [agentStatus, setAgentStatus] = createSignal<AgentStatus>(FALLBACK_STATUS);
   const [accountUsage, setAccountUsage] = createSignal<AccountUsage | null>(null);
@@ -263,7 +262,15 @@ export function App() {
         if (event.status === "completed") markReplyCompleted(event.botId);
         return;
       case "prompt":
-        setPendingPrompts((current) => ({ ...current, [event.botId]: event }));
+        // A bot can ask about several things at once. Each card waits its turn; none replaces another.
+        setPendingPrompts((current) => {
+          const waiting = current[event.botId] ?? [];
+          if (waiting.some((prompt) => prompt.requestId === event.requestId)) return current;
+          return { ...current, [event.botId]: [...waiting, event] };
+        });
+        return;
+      case "prompt-closed":
+        setPendingPrompts((current) => withoutPrompt(current, event.botId, event.requestId));
         return;
       case "error":
         if (event.botId) appendUiError(event.botId, event.message, "chat.error.generic");
@@ -535,11 +542,11 @@ export function App() {
 
   async function answerPrompt(answers: Record<string, string[]>): Promise<boolean> {
     const bot = activeBot();
-    const prompt = bot ? pendingPrompts()[bot.id] : undefined;
+    const prompt = bot ? pendingPrompts()[bot.id]?.[0] : undefined;
     if (!bot || !prompt) return false;
     try {
       await window.markas.agent.respondToPrompt({ requestId: prompt.requestId, answers });
-      setPendingPrompts((current) => ({ ...current, [bot.id]: undefined }));
+      setPendingPrompts((current) => withoutPrompt(current, bot.id, prompt.requestId));
       return true;
     } catch (error) {
       appendUiError(bot.id, error, "chat.error.answer");
@@ -631,7 +638,7 @@ export function App() {
     let waiting = 0;
     for (const bot of botList()) {
       const needsPerson =
-        Boolean(prompts[bot.id]) ||
+        Boolean(prompts[bot.id]?.length) ||
         handOffs.some((handOff) =>
           handOff.botId
             ? handOff.botId === bot.id
@@ -667,7 +674,7 @@ export function App() {
           tabId: handOff.tabId,
         });
       }
-      const prompt = prompts[bot.id];
+      const prompt = prompts[bot.id]?.[0];
       if (prompt) {
         const question = prompt.questions[0];
         notices.push({
@@ -781,7 +788,7 @@ export function App() {
           activeBrowserTabId={activeBrowserTabId()}
           browserControlState={browserControlState()}
           leftSidebarCollapsed={leftPanelCollapsed()}
-          prompt={activeBot() ? pendingPrompts()[activeBot()?.id ?? ""] : undefined}
+          prompt={activeBot() ? pendingPrompts()[activeBot()?.id ?? ""]?.[0] : undefined}
           activeTurnId={activeBot() ? activeTurns()[activeBot()?.id ?? ""] : null}
           agentPickerOpen={agentPickerOpen()}
           creatingAgent={creatingAgent()}
@@ -953,6 +960,16 @@ function formatTime(value: string): string {
   // An empty time is shown as "now" where it is rendered, in the current language.
   if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
+/** A bot's open cards without one of them. */
+function withoutPrompt(
+  prompts: Record<string, PromptEvent[]>,
+  botId: string,
+  requestId: string | number,
+): Record<string, PromptEvent[]> {
+  const left = (prompts[botId] ?? []).filter((prompt) => prompt.requestId !== requestId);
+  return { ...prompts, [botId]: left };
 }
 
 function withoutBot<T>(values: Record<string, T>, botId: string): Record<string, T> {

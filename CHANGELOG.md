@@ -4,6 +4,14 @@ What changed in Markas, newest first.
 
 ## Unreleased
 
+- A tab the person took over offers to save a login in the Keyring too; the bot is then told in the chat, since it is not waiting on the tab.
+- A login saved from a hand-off gets a name the Keyring accepts, made from the website.
+- Bots are told not to end their turn asking the person to sign in, and to hand the tab over instead.
+- When a bot asks about several things at once, every card is shown in turn instead of the last one hiding the others; a yes for the session on a command also answers the other command cards.
+- A permission card for a website or for a saved key says that the yes for the session covers that one website or key.
+- What a bot says before and after using a tool is set apart in its reply instead of running together.
+- A chat shows its earlier messages while the first turn after Markas restarts is running.
+- A link to a site without https no longer tries to load an icon the page refuses.
 - OpenCode is a third engine: a bot can run on any model your OpenCode has, with the same access levels, Markas tools and bot browser as the other engines.
 - A turn that an engine ends without an answer is shown as failed, with what to check, instead of looking finished.
 - A bot on OpenCode that is told no explains what it could not do, instead of stopping mid-sentence.

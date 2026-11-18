@@ -55,6 +55,8 @@ const execFileAsync = promisify(execFile);
 
 /** How long a bot waits for the person's yes or no before the request lapses: a week. */
 const PERMISSION_WAIT_SECONDS = 7 * 24 * 60 * 60;
+/** What sets two messages of one turn apart in the reply. */
+const MESSAGE_GAP = "\n\n";
 const DENIED_MESSAGE =
   "The person did not allow this. Do not retry it or look for another way to do the same thing; ask them what they would like instead.";
 
@@ -79,6 +81,8 @@ interface ActiveTurn {
   itemId: string;
   text: string;
   assistantMessages: Map<string, string>;
+  /** True once a new message of the bot started after some text, so the next text is set apart. */
+  newMessage: boolean;
 }
 
 interface ThreadRuntime {
@@ -353,6 +357,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       itemId: `${turnId}:assistant`,
       text: "",
       assistantMessages: new Map<string, string>(),
+      newMessage: false,
     };
     runtime.activeTurn = activeTurn;
     this.emit("notification", {
@@ -392,6 +397,11 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     if (message.type === "stream_event" && message.parent_tool_use_id === null) {
       const event = message.event as unknown;
       const delta = isRecord(event) ? event.delta : null;
+      // What the bot says before and after using a tool are separate messages; without a
+      // break between them they would run together into one sentence.
+      if (isRecord(event) && event.type === "message_start" && runtime.activeTurn?.text) {
+        runtime.activeTurn.newMessage = true;
+      }
       if (
         event &&
         isRecord(event) &&
@@ -400,7 +410,10 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         delta.type === "text_delta" &&
         typeof delta.text === "string"
       ) {
-        this.#appendDelta(runtime, delta.text);
+        const turn = runtime.activeTurn;
+        const gap = turn?.newMessage ? MESSAGE_GAP : "";
+        if (turn) turn.newMessage = false;
+        this.#appendDelta(runtime, gap + delta.text);
       }
       return;
     }
@@ -424,7 +437,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       const text = messageText(message.message);
       if (!turn || !text) return;
       turn.assistantMessages.set(message.uuid, text);
-      const completeText = [...turn.assistantMessages.values()].join("");
+      const completeText = [...turn.assistantMessages.values()].join(MESSAGE_GAP);
       if (completeText.startsWith(turn.text)) {
         this.#appendDelta(runtime, completeText.slice(turn.text.length));
       }
@@ -445,7 +458,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     const fallback = message.subtype === "success" ? message.result : "";
     const turn = runtime.activeTurn;
     if (turn) {
-      const completeText = [...turn.assistantMessages.values()].join("");
+      const completeText = [...turn.assistantMessages.values()].join(MESSAGE_GAP);
       if (completeText) turn.text = completeText;
       else if (!turn.text && fallback) this.#appendDelta(runtime, fallback);
     }

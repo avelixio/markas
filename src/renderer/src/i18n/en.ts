@@ -500,6 +500,9 @@ export const en = {
   "permission.chat.write":
     "For this session: changes in this folder, until the chat's session ends.",
   "permission.chat.network": "For this session: this tool, until the chat's session ends.",
+  "permission.chat.site": "For this session: this website only, until the chat's session ends.",
+  "permission.chat.key":
+    "For this session: this key, on its own website only, until the chat's session ends.",
   "permission.chat.tool": "For this session: this tool, until the chat's session ends.",
   "permission.chat.command":
     "For this session: every command this bot runs in this chat, until the chat's session ends. Each one is still written in the Logbook.",
@@ -684,6 +687,8 @@ export const en = {
   "handoff.saveKey": "Save a login in the Keyring",
   "handoff.saveKey.hint":
     "If this step is signing in to {site}, save the login in the Keyring instead of typing it on the page: {name} then signs in by itself, now and next time, without ever seeing the password.",
+  "handoff.saveKey.message":
+    'I saved a login for {site} in the Keyring as "{name}" and shared it with you. Sign in with it and carry on.',
   "handoff.problem": "You can try again, or choose Done to let the bot carry on.",
   "preview.alt": "The page the bot is on: {title}",
   "preview.noImage": "This page cannot be shown right now. The bot can still use it.",

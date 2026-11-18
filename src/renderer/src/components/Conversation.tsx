@@ -583,14 +583,19 @@ function RichMessageText(props: {
             >
               <span class="message-link-icon" aria-hidden="true">
                 <LinkIcon />
-                <img
-                  src={faviconUrl(part.url)}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  onError={(event) => event.currentTarget.remove()}
-                />
+                {/* The page's rules load pictures from https only; any other icon would be refused. */}
+                <Show when={faviconUrl(part.url)}>
+                  {(icon) => (
+                    <img
+                      src={icon()}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      onError={(event) => event.currentTarget.remove()}
+                    />
+                  )}
+                </Show>
               </span>
               {part.text}
             </a>
@@ -664,8 +669,10 @@ function safeBrowserUrl(value: string): string | null {
   }
 }
 
-function faviconUrl(value: string): string {
-  return `${new URL(value).origin}/favicon.ico`;
+/** The icon of a linked website, or null for one the page may not load pictures from. */
+function faviconUrl(value: string): string | null {
+  const url = new URL(value);
+  return url.protocol === "https:" ? `${url.origin}/favicon.ico` : null;
 }
 
 function taggedMessageParts(body: string, bots: BotProfile[]) {
@@ -1891,10 +1898,11 @@ export function Conversation(props: ConversationProps) {
             }}
           </For>
           <AgentActivityIndicator bot={props.bot} state={agentActivity()} />
-          <Show when={props.prompt}>
+          {/* Keyed, so the next waiting card starts fresh instead of keeping the last one's state. */}
+          <Show when={props.prompt} keyed>
             {(prompt) => (
               <PromptCard
-                questions={prompt().questions}
+                questions={prompt.questions}
                 botName={props.bot?.name}
                 onSubmit={props.onAnswerPrompt}
               />
@@ -1911,6 +1919,7 @@ export function Conversation(props: ConversationProps) {
               botName={props.bot?.name ?? t("common.bot")}
               site={siteOf(props.browserTabs.find((tab) => tab.id === handOff().tabId)?.url)}
               onOpenPanel={() => setActiveRightPanel("browser")}
+              onTellBot={(text) => void submitMessage(text)}
             />
           )}
         </Show>

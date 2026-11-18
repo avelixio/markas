@@ -174,6 +174,58 @@ describe("AgentService access levels", () => {
     await waitFor(() => prompts().length === 2);
   });
 
+  it("lets one yes for the session settle the other commands the bot asked about at once", async () => {
+    const { service, client, bot, threadId, prompts, events } = await setup();
+    const notes: string[] = [];
+    service.on("permission", (note) => notes.push(`${note.subject}:${note.decision}`));
+    const ask = (id: string, command: string) =>
+      client.sendRequest({
+        id,
+        method: "item/permission/request",
+        params: { threadId, turnId: "turn-1", kind: "command", detail: command, grant: null },
+      });
+
+    // An engine can ask about two commands before the person answers either.
+    ask("par-1", "echo one");
+    ask("par-2", "echo two");
+    await waitFor(() => prompts().length === 2);
+
+    await service.respondToPrompt({
+      requestId: "par-2",
+      answers: { permission: ["Allow for this chat"] },
+    });
+    // The other card is answered by that yes, and taken down, so nothing waits unseen.
+    await waitFor(() => client.responses.length === 2);
+    expect(client.responses).toEqual(
+      expect.arrayContaining([
+        { id: "par-2", result: { decision: "chat" } },
+        { id: "par-1", result: { decision: "once" } },
+      ]),
+    );
+    expect(events).toContainEqual({ type: "prompt-closed", botId: bot.id, requestId: "par-1" });
+    expect(notes).toEqual(["echo:chat", "echo:covered"]);
+    await expect(
+      service.respondToPrompt({ requestId: "par-1", answers: { permission: ["Allow once"] } }),
+    ).rejects.toThrow("no longer active");
+  });
+
+  it("leaves the other cards open when the yes is for one command only", async () => {
+    const { service, client, threadId, prompts } = await setup();
+    const ask = (id: string, command: string) =>
+      client.sendRequest({
+        id,
+        method: "item/permission/request",
+        params: { threadId, turnId: "turn-1", kind: "command", detail: command, grant: null },
+      });
+    ask("one-1", "echo one");
+    ask("one-2", "echo two");
+    await waitFor(() => prompts().length === 2);
+    await service.respondToPrompt({ requestId: "one-1", answers: { permission: ["Allow once"] } });
+    expect(client.responses).toEqual([{ id: "one-1", result: { decision: "once" } }]);
+    await service.respondToPrompt({ requestId: "one-2", answers: { permission: ["Don't allow"] } });
+    expect(client.responses.at(-1)).toEqual({ id: "one-2", result: { decision: "deny" } });
+  });
+
   it("turns the engine's own approval requests into cards instead of approving them", async () => {
     const { service, client, threadId, prompts } = await setup();
     client.sendRequest({

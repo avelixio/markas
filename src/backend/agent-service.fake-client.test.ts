@@ -59,6 +59,51 @@ describe("AgentService with an injected client", () => {
     expect(JSON.stringify(conversation)).toContain("Done from the fake engine.");
   });
 
+  it("keeps a bot's earlier messages in its chat during the first turn after a restart", async () => {
+    const client = new FakeAgentClient({ autoReply: "The first answer." });
+    const open = async () => {
+      const store = new BotStore(join(root, "data"), join(root, "data"));
+      const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+      await store.initialize();
+      await mailbox.initialize();
+      const created = new AgentService(
+        store,
+        mailbox,
+        new UnavailableBrowserService(),
+        null,
+        5_000,
+        "codex",
+        fakeClientFactory({ codex: client }),
+      );
+      const events: AgentEvent[] = [];
+      created.on("event", (event) => events.push(event));
+      await created.initialize();
+      return { created, events };
+    };
+
+    const first = await open();
+    service = first.created;
+    const bot = await first.created.createBot();
+    await first.created.sendMessage({ botId: bot.id, text: "One" });
+    await waitFor(() => first.events.some((event) => event.type === "turn-completed"));
+    await first.created.stop();
+
+    // The host starts again and the person writes before opening the chat.
+    const second = await open();
+    service = second.created;
+    await second.created.sendMessage({ botId: bot.id, text: "Two" });
+    await waitFor(() => second.events.some((event) => event.type === "turn-started"));
+    // The first view of the chat that shows the new message must show the old ones too.
+    const firstWithNew = second.events.find(
+      (event): event is Extract<AgentEvent, { type: "conversation" }> =>
+        event.type === "conversation" &&
+        event.snapshot.botId === bot.id &&
+        event.snapshot.messages.some((message) => message.text === "Two"),
+    );
+    const shown = JSON.stringify(firstWithNew?.snapshot.messages ?? []);
+    expect(shown).toContain("The first answer.");
+  });
+
   it("gives a new bot an engine that is ready when the preferred one is not installed", async () => {
     const store = new BotStore(join(root, "data"), join(root, "data"));
     const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);

@@ -562,7 +562,15 @@ export interface AgentPromptQuestion {
   isSecret: boolean;
   options: Array<{ label: string; description: string }> | null;
   /** Set when the question is a bot asking permission, so the card can say so clearly. */
-  permission?: { kind: AskKind; detail: string };
+  permission?: {
+    kind: AskKind;
+    detail: string;
+    /**
+     * What "allow for this session" covers when it is narrower than the kind says:
+     * one website, or one saved key on its own site.
+     */
+    covers?: "site" | "key";
+  };
 }
 
 /**
@@ -620,6 +628,8 @@ export type AgentEvent =
       turnId: string;
       questions: AgentPromptQuestion[];
     }
+  /** A card that no longer needs an answer, because an earlier answer already covered it. */
+  | { type: "prompt-closed"; botId: string; requestId: string | number }
   | { type: "browser-changed"; tabs: BrowserTab[]; activeTabId: string | null }
   | { type: "browser-control-changed"; state: BrowserControlState }
   | { type: "error"; botId?: string; code: string; message: string };

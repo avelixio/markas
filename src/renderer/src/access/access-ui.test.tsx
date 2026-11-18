@@ -99,6 +99,43 @@ describe("PermissionCard", () => {
     expect(onSubmit).toHaveBeenCalledWith({ permission: ["Don't allow"] });
   });
 
+  it("says a yes for the session covers one website, or one key, when that is what it covers", () => {
+    const options = [
+      { label: "Allow once", description: "" },
+      { label: "Allow for this chat", description: "" },
+      { label: "Don't allow", description: "" },
+    ];
+    const { unmount } = render(() => (
+      <PromptCard
+        questions={[
+          question({
+            options,
+            permission: { kind: "network", detail: "https://example.com/", covers: "site" },
+          }),
+        ]}
+        botName="Atlas"
+        onSubmit={async () => true}
+      />
+    ));
+    expect(screen.getByText(/this website only/)).toBeInTheDocument();
+    expect(screen.queryByText(/this tool/)).not.toBeInTheDocument();
+    unmount();
+
+    render(() => (
+      <PromptCard
+        questions={[
+          question({
+            options,
+            permission: { kind: "tool", detail: 'Sign in with the key "notes"', covers: "key" },
+          }),
+        ]}
+        botName="Atlas"
+        onSubmit={async () => true}
+      />
+    ));
+    expect(screen.getByText(/this key, on its own website only/)).toBeInTheDocument();
+  });
+
   it("warns when the bot asks for Markas's own data, and answers in the host's words in any language", () => {
     setLanguage("id");
     const onSubmit = vi.fn(async () => true);

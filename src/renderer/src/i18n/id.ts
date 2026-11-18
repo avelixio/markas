@@ -511,6 +511,9 @@ export const id: Record<MessageKey, string> = {
   "permission.chat.read": "Untuk sesi ini: membaca di folder ini, sampai sesi obrolan berakhir.",
   "permission.chat.write": "Untuk sesi ini: perubahan di folder ini, sampai sesi obrolan berakhir.",
   "permission.chat.network": "Untuk sesi ini: alat ini, sampai sesi obrolan berakhir.",
+  "permission.chat.site": "Untuk sesi ini: hanya situs ini, sampai sesi obrolan berakhir.",
+  "permission.chat.key":
+    "Untuk sesi ini: kunci ini, hanya di situsnya sendiri, sampai sesi obrolan berakhir.",
   "permission.chat.tool": "Untuk sesi ini: alat ini, sampai sesi obrolan berakhir.",
   "permission.chat.command":
     "Untuk sesi ini: setiap perintah yang dijalankan bot ini di obrolan ini, sampai sesi obrolan berakhir. Tiap perintah tetap dicatat di Logbook.",
@@ -695,6 +698,8 @@ export const id: Record<MessageKey, string> = {
   "handoff.saveKey": "Simpan login di Keyring",
   "handoff.saveKey.hint":
     "Kalau langkah ini adalah masuk ke {site}, simpan loginnya di Keyring daripada mengetiknya di halaman: {name} lalu masuk sendiri, sekarang dan lain kali, tanpa pernah melihat kata sandinya.",
+  "handoff.saveKey.message":
+    'Saya sudah menyimpan login untuk {site} di Keyring dengan nama "{name}" dan membagikannya ke kamu. Masuk dengan login itu lalu lanjutkan.',
   "handoff.skip": "Lewati langkah ini",
   "handoff.problem": "Anda bisa mencoba lagi, atau pilih Selesai agar bot melanjutkan.",
   "preview.alt": "Halaman yang sedang dibuka bot: {title}",

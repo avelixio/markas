@@ -105,7 +105,12 @@ describe("AgentService and the bot browser", () => {
     const id = callTool("open", { url: `${SHOP}/orders` });
     await waitFor(() => prompts().length === 1);
     const question = prompts()[0]?.questions[0];
-    expect(question?.permission).toEqual({ kind: "network", detail: `${SHOP}/orders` });
+    // A yes for the session covers this one website, and the card says so.
+    expect(question?.permission).toEqual({
+      kind: "network",
+      detail: `${SHOP}/orders`,
+      covers: "site",
+    });
     expect(question?.question).toContain("wants to use the internet");
     expect(question?.options).toMatchObject([
       { label: "Allow once" },
@@ -178,6 +183,7 @@ describe("AgentService and the bot browser", () => {
     expect(prompts()[1]?.questions[0]?.permission).toEqual({
       kind: "network",
       detail: "https://elsewhere.example.org/landing",
+      covers: "site",
     });
     await allow(read, "Don't allow");
     expect((await answer(read)).success).toBe(false);

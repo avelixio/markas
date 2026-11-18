@@ -2,6 +2,7 @@ import { createSignal, For, Show } from "solid-js";
 import { ACCESS_LEVELS, type AccessLevel } from "../../../shared/access";
 import type { AgentPromptQuestion } from "../../../shared/ipc";
 import { t } from "../i18n";
+import type { MessageKey } from "../i18n/en";
 import { Icon } from "../ui/Icon";
 import type { IconName } from "../ui/icons";
 import "./access.css";
@@ -130,6 +131,11 @@ export function PermissionCard(props: {
 }) {
   const [sending, setSending] = createSignal(false);
   const kind = () => props.question.permission?.kind ?? "tool";
+  /** What "allow for this session" covers, in the words of the card. */
+  const scope = (): MessageKey =>
+    props.question.permission?.covers
+      ? `permission.chat.${props.question.permission.covers}`
+      : `permission.chat.${kind()}`;
   const detail = () => props.question.permission?.detail ?? "";
   const canAllowForChat = () =>
     props.question.options?.some((option) => option.label === ALLOW_CHAT) ?? false;
@@ -172,7 +178,7 @@ export function PermissionCard(props: {
             type="button"
             class="mk-button"
             disabled={sending()}
-            title={t(`permission.chat.${kind()}`)}
+            title={t(scope())}
             onClick={() => void answer(ALLOW_CHAT)}
           >
             {t("permission.chat")}
@@ -188,7 +194,7 @@ export function PermissionCard(props: {
         </button>
       </div>
       <Show when={canAllowForChat()}>
-        <small class="mk-permission__scope">{t(`permission.chat.${kind()}`)}</small>
+        <small class="mk-permission__scope">{t(scope())}</small>
       </Show>
     </section>
   );

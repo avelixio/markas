@@ -133,6 +133,33 @@ fi
     await client.stop();
   });
 
+  it("sets the bot's messages of one turn apart, so they do not run together", async () => {
+    const { client, notifications, output, threadId } = await createHarness();
+    const turnId = "44444444-4444-4444-8444-444444444444";
+    await startTurn(client, threadId, turnId);
+    const messageStart = {
+      type: "stream_event",
+      parent_tool_use_id: null,
+      session_id: threadId,
+      uuid: turnId,
+      event: { type: "message_start", message: {} },
+    } as unknown as SDKMessage;
+
+    output.push(messageStart);
+    output.push(streamDelta(threadId, turnId, "I'll run both."));
+    output.push(assistantMessage(threadId, "first", "I'll run both."));
+    // A tool runs here; then a second message of the same turn starts.
+    output.push(messageStart);
+    output.push(streamDelta(threadId, turnId, "Both ran."));
+    output.push(assistantMessage(threadId, "second", "Both ran."));
+    output.push(resultMessage(threadId, turnId, "Both ran."));
+    await waitFor(() => notifications.some((event) => event.method === "turn/completed"));
+
+    expect(notificationDeltas(notifications)).toEqual(["I'll run both.", "\n\nBoth ran."]);
+    expect(completedText(notifications)).toBe("I'll run both.\n\nBoth ran.");
+    await client.stop();
+  });
+
   it("does not duplicate a fully streamed assistant message", async () => {
     const { client, notifications, output, threadId } = await createHarness();
     const turnId = "33333333-3333-4333-8333-333333333333";

@@ -1626,6 +1626,51 @@ describe("Markas connected desktop shell", () => {
     );
   });
 
+  it("keeps every card a bot asked at once, and shows the next after an answer", async () => {
+    render(() => <App />);
+    await screen.findByRole("heading", { name: "Chief" });
+    await confirmOnboardingModel();
+    const permission = (requestId: string, command: string) =>
+      emitAgentEvent?.({
+        type: "prompt",
+        requestId,
+        botId: "chief",
+        threadId: "thread-1",
+        turnId: "turn-1",
+        questions: [
+          {
+            id: "permission",
+            header: "Permission",
+            question: `Chief wants to run a command\n${command}`,
+            isSecret: false,
+            options: [
+              { label: "Allow once", description: "" },
+              { label: "Don't allow", description: "" },
+            ],
+            permission: { kind: "command", detail: command },
+          },
+        ],
+      });
+    permission("cmd-1", "echo one");
+    permission("cmd-2", "echo two");
+
+    // The first card is shown; the second waits behind it instead of replacing it.
+    expect(await screen.findByText("echo one")).toBeInTheDocument();
+    expect(screen.queryByText("echo two")).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Allow once" }));
+    await waitFor(() =>
+      expect(window.markas.agent.respondToPrompt).toHaveBeenCalledWith({
+        requestId: "cmd-1",
+        answers: { permission: ["Allow once"] },
+      }),
+    );
+    expect(await screen.findByText("echo two")).toBeInTheDocument();
+
+    // A card the host settled by itself is taken down.
+    emitAgentEvent?.({ type: "prompt-closed", botId: "chief", requestId: "cmd-2" });
+    await waitFor(() => expect(screen.queryByText("echo two")).not.toBeInTheDocument());
+  });
+
   it("renders persistent outgoing and incoming bot exchanges", async () => {
     vi.mocked(window.markas.agent.readConversation).mockImplementation(async (botId) => ({
       botId,

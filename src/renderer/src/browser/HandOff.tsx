@@ -34,6 +34,27 @@ const SKIP_NOTE =
 const savedNote = (name: string, site: string) =>
   `The person saved a login for ${site} in the Keyring as "${name}" and shared it with you. Sign in now with markas.keyring_sign_in and that key name. Do not ask the person to type it.`;
 
+/**
+ * A name for a new key, made from its website: lower-case letters, digits and dashes, as the
+ * Keyring requires. "app.example.com" becomes "app-example-com".
+ */
+export function keyNameFor(site: string): string {
+  let host: string;
+  try {
+    host = new URL(site).host;
+  } catch {
+    host = site;
+  }
+  const name = host
+    .toLowerCase()
+    .replace(/^www\./, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63)
+    .replace(/-+$/, "");
+  return name || "login";
+}
+
 /** The website of an address, when it is one a login can belong to. */
 export function siteOf(url: string | null | undefined): string | null {
   try {
@@ -69,6 +90,11 @@ export function HandOffCard(props: {
   site?: string | null;
   /** Shows the Browser panel, where the person uses the page. */
   onOpenPanel?: () => void;
+  /**
+   * Tells the bot in the chat. Used after a login is saved for a tab the person took over:
+   * the bot is not waiting on that tab, so a note given with the tab would never reach it.
+   */
+  onTellBot?: (text: string) => void;
 }) {
   const [savingKey, setSavingKey] = createSignal(false);
   // The crew, for choosing who else may use the saved login; asked for only when the dialog opens.
@@ -110,14 +136,19 @@ export function HandOffCard(props: {
     await keyringClient.create(draft);
     setSavingKey(false);
     setProblem(null);
+    const site = draft.origin ?? props.site ?? "";
+    // Read before the tab is handed back, which ends this card.
+    const waiting = byBot();
     try {
       await callHost("browser.resumeControl", {
         tabId: props.handOff.tabId,
-        note: savedNote(draft.name, draft.origin ?? props.site ?? ""),
+        note: savedNote(draft.name, site),
       });
     } catch (error) {
       setProblem(describe(error));
+      return;
     }
+    if (!waiting) props.onTellBot?.(t("handoff.saveKey.message", { site, name: draft.name }));
   }
 
   return (
@@ -162,7 +193,7 @@ export function HandOffCard(props: {
           <Icon name="check" size={12} />
           {byBot() ? t("handoff.done") : t("handoff.giveBack", { name: props.botName })}
         </button>
-        <Show when={byBot() && props.site}>
+        <Show when={props.site}>
           <button
             type="button"
             data-slot="save-key"
@@ -185,7 +216,7 @@ export function HandOffCard(props: {
           </button>
         </Show>
       </div>
-      <Show when={byBot() && props.site}>
+      <Show when={props.site}>
         {(site) => (
           <p data-slot="key-hint" class="mk-handoff__hint">
             {t("handoff.saveKey.hint", { site: new URL(site()).host, name: props.botName })}
@@ -197,7 +228,7 @@ export function HandOffCard(props: {
           <KeyDialog
             existing={null}
             initial={{
-              name: new URL(site()).host,
+              name: keyNameFor(site()),
               origin: site(),
               sharedWith: props.handOff.botId ? [props.handOff.botId] : [],
             }}

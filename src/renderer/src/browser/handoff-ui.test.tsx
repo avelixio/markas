@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowserHandOff, BrowserTabView } from "../../../shared/ipc";
 import { setLanguage, t } from "../i18n";
-import { BrowserPreview, HandOffCard } from "./HandOff";
+import { BrowserPreview, HandOffCard, keyNameFor } from "./HandOff";
 
 const handOff = (overrides: Partial<BrowserHandOff> = {}): BrowserHandOff => ({
   tabId: "tab-1",
@@ -68,7 +68,8 @@ describe("HandOffCard", () => {
     // The dialog already knows the site and who asked.
     const website = await screen.findByLabelText(/^Website/);
     expect(website).toHaveValue("https://admin.example.com");
-    expect(screen.getByLabelText(/^Name/)).toHaveValue("admin.example.com");
+    // A name the Keyring accepts: lower-case letters, digits and dashes.
+    expect(screen.getByLabelText(/^Name/)).toHaveValue("admin-example-com");
     fireEvent.input(screen.getByLabelText(/^Username/), {
       target: { value: "sam" },
     });
@@ -80,7 +81,7 @@ describe("HandOffCard", () => {
     await waitFor(() => expect(calls.at(-1)?.method).toBe("browser.resumeControl"));
     const created = calls.find((call) => call.method === "keyring.create")?.input;
     expect(created).toMatchObject({
-      name: "admin.example.com",
+      name: "admin-example-com",
       kind: "login",
       origin: "https://admin.example.com",
       username: "sam",
@@ -94,9 +95,55 @@ describe("HandOffCard", () => {
     expect(resumed.note).not.toContain("open-sesame-not-real");
   });
 
-  it("offers no login to save when the site is unknown or the person took over", () => {
+  it("offers no login to save when the site is unknown", () => {
     render(() => <HandOffCard handOff={handOff()} botName="Juno" />);
     expect(screen.queryByRole("button", { name: t("handoff.saveKey") })).toBeNull();
+  });
+
+  it("offers to save a login on a tab the person took over, and tells the bot in the chat", async () => {
+    answers["agent.listBots"] = [];
+    const told: string[] = [];
+    render(() => (
+      <HandOffCard
+        handOff={handOff({ requestedBy: "person" })}
+        botName="Juno"
+        site="https://admin.example.com"
+        onTellBot={(text) => told.push(text)}
+      />
+    ));
+    fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
+    await screen.findByLabelText(/^Website/);
+    fireEvent.input(screen.getByLabelText(/^Username/), { target: { value: "sam" } });
+    fireEvent.input(screen.getByLabelText(/^Password/), {
+      target: { value: "open-sesame-not-real" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
+
+    // Nobody waits on the tab, so a note given with it would be lost: the bot is told in the chat.
+    await waitFor(() => expect(told).toHaveLength(1));
+    expect(told[0]).toContain('"admin-example-com"');
+    expect(told[0]).toContain("https://admin.example.com");
+    expect(told[0]).not.toContain("open-sesame-not-real");
+  });
+
+  it("does not write in the chat when the bot is waiting on the tab", async () => {
+    answers["agent.listBots"] = [];
+    const told: string[] = [];
+    render(() => (
+      <HandOffCard
+        handOff={handOff()}
+        botName="Juno"
+        site="https://admin.example.com"
+        onTellBot={(text) => told.push(text)}
+      />
+    ));
+    fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
+    await screen.findByLabelText(/^Website/);
+    fireEvent.input(screen.getByLabelText(/^Username/), { target: { value: "sam" } });
+    fireEvent.input(screen.getByLabelText(/^Password/), { target: { value: "x-not-real" } });
+    fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
+    await waitFor(() => expect(calls.at(-1)?.method).toBe("browser.resumeControl"));
+    expect(told).toEqual([]);
   });
 
   it("says why the bot needs the person, and for how long it has waited", () => {
@@ -147,6 +194,20 @@ describe("HandOffCard", () => {
     fireEvent.click(screen.getByRole("button", { name: t("handoff.open", { name: "Juno" }) }));
     expect(await screen.findByRole("alert")).toHaveTextContent("The browser window is closed.");
     expect(screen.getByRole("button", { name: t("handoff.done") })).toBeEnabled();
+  });
+});
+
+describe("keyNameFor", () => {
+  it("makes a name the Keyring accepts from any website", () => {
+    expect(keyNameFor("https://admin.example.com")).toBe("admin-example-com");
+    expect(keyNameFor("https://www.example.com")).toBe("example-com");
+    expect(keyNameFor("http://127.0.0.1:47330")).toBe("127-0-0-1-47330");
+    expect(keyNameFor("https://Login.Example.COM")).toBe("login-example-com");
+    expect(keyNameFor("not a url")).toBe("not-a-url");
+    expect(keyNameFor("https://-.example")).toBe("example");
+    for (const site of ["https://a.example.com", `https://${"x".repeat(80)}.example`]) {
+      expect(keyNameFor(site)).toMatch(/^[a-z0-9][a-z0-9-]{0,62}$/);
+    }
   });
 });
 
