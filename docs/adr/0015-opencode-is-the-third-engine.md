@@ -26,7 +26,9 @@ OpenCode's models differ per person: they are whatever services the person signe
 So they are not a fixed list in Markas.
 A model id is `opencode:<provider>/<model>`, checked by shape, and the list comes from `opencode models --verbose`.
 There is no built-in list to fall back on.
-A model's effort levels are the ones of OpenCode's variants that Markas also has; a bot's effort is passed on only when its model has that variant.
+A model runs as OpenCode sets it up, and no effort level is offered for it.
+OpenCode's effort variants are its own settings per model, and a production test found one that the model refuses: OpenCode 1.14.20's "high" for Claude Opus 5 asks for a kind of thinking that model no longer takes, so every first turn came back empty.
+Until OpenCode's variants can be trusted, a bot's effort is not turned into one.
 OpenCode is "signed in" when it has at least one model, because it has no single account.
 Its sign-in asks questions in a terminal, so setup does not start it: it gives the command to run.
 

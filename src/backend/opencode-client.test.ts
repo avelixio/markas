@@ -146,7 +146,7 @@ describe("starting a conversation", () => {
       {
         model: "opencode:anthropic/claude-sonnet-5",
         displayName: "Claude Sonnet 5 (anthropic)",
-        supportedReasoningEfforts: [{ reasoningEffort: "high" }, { reasoningEffort: "max" }],
+        supportedReasoningEfforts: [],
       },
       {
         model: "opencode:deepseek/deepseek-flash",
@@ -260,26 +260,14 @@ describe("a turn", () => {
     expect(done.item.text).toBe("Hello\n\nDone.");
   });
 
-  it("sets the bot's model, and its effort when the model has that variant", async () => {
+  it("sets the bot's model as OpenCode sets it up, without picking one of its effort variants", async () => {
+    // OpenCode's "high" for Claude Opus 5 asks for a kind of thinking that model refuses, so a
+    // bot's effort is never turned into one of OpenCode's variants.
     const h = harness();
     const threadId = await h.start();
     const { agent } = await h.turn(threadId, "ask", {
       model: "opencode:anthropic/claude-sonnet-5",
       effort: "high",
-    });
-    const set = agent.asked.filter((entry) => entry.method === "session/set_model");
-    expect(set.map((entry) => entry.params.modelId)).toEqual([
-      "anthropic/claude-sonnet-5",
-      "anthropic/claude-sonnet-5/high",
-    ]);
-  });
-
-  it("leaves the effort out when the model has no such variant", async () => {
-    const h = harness();
-    const threadId = await h.start();
-    const { agent } = await h.turn(threadId, "ask", {
-      model: "opencode:anthropic/claude-sonnet-5",
-      effort: "low",
     });
     const set = agent.asked.filter((entry) => entry.method === "session/set_model");
     expect(set.map((entry) => entry.params.modelId)).toEqual(["anthropic/claude-sonnet-5"]);

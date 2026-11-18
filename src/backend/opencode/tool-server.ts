@@ -164,6 +164,13 @@ export class LocalToolServer {
       }
       case "ping":
         return rpcResult(id, {});
+      // Markas offers tools only; asking for its prompts or resources finds none, not an error.
+      case "prompts/list":
+        return rpcResult(id, { prompts: [] });
+      case "resources/list":
+        return rpcResult(id, { resources: [] });
+      case "resources/templates/list":
+        return rpcResult(id, { resourceTemplates: [] });
       case "tools/list":
         return rpcResult(id, { tools });
       case "tools/call": {

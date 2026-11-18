@@ -10,6 +10,9 @@ Found by testing 0.1.1 on a real computer.
 - An engine that is not installed shows as such right away, instead of looking as if it were always being checked.
 - The startup message reads "Starting local agent CLI…" again; 0.1.1 showed it garbled.
 - A Codex model name is shortened again as it was meant to be.
+- A bot on OpenCode answers its first message again: Markas no longer picks OpenCode's effort variant, whose "high" for Claude Opus 5 the model refused.
+- Opening a bot whose engine is missing no longer keeps Markas looking for that engine without end.
+- Stopping Markas waits for the end of a turn to be saved.
 
 ## 0.1.1 - 2026-11-18
 

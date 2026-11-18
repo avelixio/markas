@@ -5,12 +5,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { STANDING_PERMISSION_TYPES, type StandingPermissionType } from "../shared/access";
-import {
-  AGENT_REASONING_EFFORTS,
-  type BotContextBreakdown,
-  isOpenCodeModel,
-  openCodeModelName,
-} from "../shared/ipc";
+import { type BotContextBreakdown, isOpenCodeModel, openCodeModelName } from "../shared/ipc";
 import {
   type AccessScope,
   covers,
@@ -230,11 +225,10 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
             (model) => ({
               model: `opencode:${model.name}`,
               displayName: model.label,
-              supportedReasoningEfforts: model.variants
-                .filter((variant) =>
-                  (AGENT_REASONING_EFFORTS as readonly string[]).includes(variant),
-                )
-                .map((reasoningEffort) => ({ reasoningEffort })),
+              // OpenCode's effort variants are its own settings per model, and some send what the
+              // model refuses (its "high" for Claude Opus 5 asks for a kind of thinking that model
+              // no longer takes). Each model runs as OpenCode sets it up, so no effort is offered.
+              supportedReasoningEfforts: [],
             }),
           ),
         } as T;
@@ -291,7 +285,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     return {
       usedTokens: runtime.usedTokens,
       maxTokens: runtime.maxTokens,
-      model: runtime.modelKey?.split("|")[0] ?? null,
+      model: runtime.modelKey ?? null,
       categories: [{ name: "Conversation", tokens: runtime.usedTokens }],
       notLoaded: [],
       autoCompactAt: null,
@@ -481,7 +475,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     runtime.calls.clear();
     runtime.passed.clear();
 
-    await this.#setModel(runtime, getString(params, "model"), getString(params, "effort"));
+    await this.#setModel(runtime, getString(params, "model"));
 
     const turnId = getString(params, "clientUserMessageId") || randomUUID();
     const turn: ActiveTurn = {
@@ -539,28 +533,16 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     runtime.connection.notify("session/cancel", { sessionId: runtime.id });
   }
 
-  /** Sets the session to the bot's model, and to its effort when the model has that variant. */
-  async #setModel(
-    runtime: ThreadRuntime,
-    model: string | null,
-    effort: string | null,
-  ): Promise<void> {
+  /** Sets the session to the bot's model, as OpenCode sets that model up (see model/list). */
+  async #setModel(runtime: ThreadRuntime, model: string | null): Promise<void> {
     if (!model || !isOpenCodeModel(model)) return;
-    const key = `${model}|${effort ?? ""}`;
-    if (runtime.modelKey === key) return;
-    const name = openCodeModelName(model);
-    const set = (modelId: string) =>
-      runtime.connection.request<unknown>(
-        "session/set_model",
-        { sessionId: runtime.id, modelId },
-        START_TIMEOUT_MS,
-      );
-    const answer = await set(name);
-    const meta = isRecord(answer) && isRecord(answer._meta) ? answer._meta.opencode : null;
-    const variants =
-      isRecord(meta) && Array.isArray(meta.availableVariants) ? meta.availableVariants : [];
-    if (effort && variants.includes(effort)) await set(`${name}/${effort}`);
-    runtime.modelKey = key;
+    if (runtime.modelKey === model) return;
+    await runtime.connection.request<unknown>(
+      "session/set_model",
+      { sessionId: runtime.id, modelId: openCodeModelName(model) },
+      START_TIMEOUT_MS,
+    );
+    runtime.modelKey = model;
   }
 
   #handleUpdate(runtime: ThreadRuntime, update: Record<string, unknown>): void {

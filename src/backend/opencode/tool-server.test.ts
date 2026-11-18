@@ -57,6 +57,20 @@ describe("the local tool server", () => {
     expect(listed).toEqual({ jsonrpc: "2.0", id: 1, result: { tools: TOOLS } });
   });
 
+  it("answers a request for prompts or resources with none, not with an error", async () => {
+    const { post } = await open();
+    for (const [method, key] of [
+      ["prompts/list", "prompts"],
+      ["resources/list", "resources"],
+      ["resources/templates/list", "resourceTemplates"],
+    ]) {
+      const answer = (await (await post({ jsonrpc: "2.0", id: 9, method })).json()) as {
+        result: Record<string, unknown>;
+      };
+      expect(answer.result).toEqual({ [key as string]: [] });
+    }
+  });
+
   it("passes a tool call on with whose it is, and returns the answer", async () => {
     const { post, calls } = await open(async () => ({
       content: [{ type: "text" as const, text: "Atlas" }],
