@@ -1,0 +1,71 @@
+name: Download stats
+
+# Once a day, writes GitHub's download total for every release file to downloads.jsonl on the
+# stats branch, so the website's numbers page can show downloads per day. GitHub itself keeps
+# only the running total. The branch holds nothing else and is never merged.
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: download-stats
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the stats branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init -q stats && cd stats
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin stats; then
+            git checkout -q -b stats FETCH_HEAD
+          else
+            git checkout -q --orphan stats
+          fi
+
+      - name: Add today's totals
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          day=$(date -u +%Y-%m-%d)
+          gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > releases.json
+          node -e '
+            const fs = require("fs");
+            const releases = JSON.parse(fs.readFileSync("releases.json", "utf8"));
+            const assets = {};
+            for (const release of releases)
+              for (const asset of release.assets)
+                if (!asset.name.startsWith("SHA256SUMS-")) assets[asset.name] = asset.download_count;
+            const total = Object.values(assets).reduce((sum, count) => sum + count, 0);
+            const file = "stats/downloads.jsonl";
+            const lines = fs.existsSync(file) ? fs.readFileSync(file, "utf8").split("\n").filter(Boolean) : [];
+            const kept = lines.filter((line) => { try { return JSON.parse(line).day !== process.argv[1]; } catch { return false; } });
+            kept.push(JSON.stringify({ day: process.argv[1], total, assets }));
+            fs.writeFileSync(file, kept.join("\n") + "\n");
+            console.log(`${process.argv[1]}: ${total} downloads in all`);
+          ' "$day"
+
+      - name: Save it on the stats branch
+        working-directory: stats
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads.jsonl
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git commit -q -m "Download totals for $(date -u +%Y-%m-%d)"
+          git push -q origin HEAD:stats

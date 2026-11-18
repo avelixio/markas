@@ -21,6 +21,7 @@
   --on-accent: #0b1f18;
   --warn: #e8b450;
   --warn-soft: #382c13;
+  --danger: #f0806a;
   --ink: #111110;
   --mint: #5fd9b0;
   --amber: #e8b450;
@@ -52,6 +53,7 @@
     --on-accent: #ffffff;
     --warn: #a86a00;
     --warn-soft: #fbefd2;
+    --danger: #c2412b;
     --mint: #39c79a;
     --amber: #e0a630;
     --coral: #ec6f57;
@@ -524,6 +526,21 @@ p {
 }
 
 .footer a {
+  color: var(--text-2);
+}
+
+.redirect {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+  padding: 96px 0;
+}
+
+.redirect h1 {
+  font-size: 28px;
+}
+
+.redirect p {
   color: var(--text-2);
 }
 

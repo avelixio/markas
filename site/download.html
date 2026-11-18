@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Downloading Markas</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- This page's view is the click count; then it sends the browser on to the file on GitHub. -->
+    <script src="/_vercel/insights/script.js" defer></script>
+    <script src="/download.js" defer></script>
+  </head>
+  <body>
+    <main data-component="DownloadRedirect" class="wrap redirect">
+      <img src="/icon.svg" alt="" width="40" height="40" />
+      <h1 data-slot="title" id="title">Your download is starting</h1>
+      <p data-slot="fallback" id="fallback">
+        If it does not start, take the file from the
+        <a href="https://github.com/avelixio/markas/releases/latest">latest release on GitHub</a>.
+      </p>
+      <p><a href="/">Back to Markas</a></p>
+    </main>
+  </body>
+</html>

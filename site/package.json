@@ -1,0 +1,6 @@
+{
+  "name": "markas-site",
+  "private": true,
+  "type": "module",
+  "description": "The Markas website and its private numbers page. No dependencies, no build step."
+}

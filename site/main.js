@@ -1,6 +1,6 @@
-// Points the download button at the right file for this visitor's system, from the newest
-// GitHub release, and copies the install command. Without JavaScript, or when GitHub cannot be
-// reached, the button opens the release page, which lists every file.
+// Points the download button at this system's download page, which counts the click and then
+// starts the file from the newest GitHub release; shows the newest version; copies the install
+// command. Without JavaScript the button opens the release page, which lists every file.
 const REPO = "avelixio/markas";
 
 /** Which system the visitor is on, as far as the browser says. */
@@ -25,13 +25,12 @@ async function detectSystem() {
   return { os: "unknown" };
 }
 
-/** The file a person on this system downloads, from the release's list of files. */
-function pickAsset(assets, system) {
-  const find = (pattern) => assets.find((asset) => pattern.test(asset.name));
-  if (system.os === "windows") return find(/^Markas-Setup-.*\.exe$/);
-  if (system.os === "macos") return find(new RegExp(`^Markas-.*-mac-${system.arch}\\.dmg$`));
-  if (system.os === "linux") return find(/\.AppImage$/);
-  return undefined;
+/** The website's download page for this system, which counts the click and starts the file. */
+function downloadPage(system) {
+  if (system.os === "windows") return "/download/windows";
+  if (system.os === "macos") return `/download/macos-${system.arch}`;
+  if (system.os === "linux") return "/download/linux";
+  return null;
 }
 
 const NAMES = { windows: "Windows", macos: "macOS", linux: "Linux" };
@@ -52,6 +51,7 @@ async function setUpDownload() {
     const arch =
       system.os === "macos" ? (system.arch === "arm64" ? " (Apple silicon)" : " (Intel)") : "";
     label.textContent = `Download for ${NAMES[system.os]}${arch}`;
+    button.href = downloadPage(system);
   }
 
   try {
@@ -62,12 +62,8 @@ async function setUpDownload() {
     const release = await response.json();
     const number = String(release.tag_name || "").replace(/^v/, "");
     if (/^\d+\.\d+\.\d+$/.test(number)) version.textContent = `Version ${number}`;
-    const asset = pickAsset(release.assets || [], system);
-    if (asset?.browser_download_url?.startsWith(`https://github.com/${REPO}/releases/download/`)) {
-      button.href = asset.browser_download_url;
-    }
   } catch {
-    // The release page stays as the link.
+    // The version written in the page stays.
   }
 }
 

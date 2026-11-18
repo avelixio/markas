@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Markas numbers</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/admin.css" />
+    <!-- No analytics here: the owner's own visits are not counted. -->
+    <script src="/admin.js" type="module" defer></script>
+  </head>
+  <body>
+    <header data-component="AdminHeader" class="wrap header">
+      <a data-slot="brand" class="brand" href="/">
+        <img src="/icon.svg" alt="" width="28" height="28" />
+        <span>Markas</span>
+      </a>
+      <span data-slot="page" class="page-name">Numbers</span>
+    </header>
+
+    <main id="main" class="wrap">
+      <p id="loading" class="muted" role="status">Loading…</p>
+
+      <form data-component="SignIn" id="sign-in" class="sign-in" hidden>
+        <h1 data-slot="title">Sign in to see the numbers</h1>
+        <div data-slot="field" class="field">
+          <label for="password">Password</label>
+          <div class="password">
+            <input id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="sign-in-error" />
+            <button type="button" id="show-password" class="ghost" aria-pressed="false" aria-label="Show the password">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
+            </button>
+          </div>
+          <p id="sign-in-error" class="error" role="alert"></p>
+        </div>
+        <button data-slot="submit" type="submit" class="button primary wide" id="sign-in-button">Sign in</button>
+      </form>
+
+      <section data-component="Numbers" id="numbers" hidden aria-labelledby="numbers-title">
+        <div data-slot="top" class="top">
+          <div>
+            <h1 id="numbers-title">Numbers</h1>
+            <p class="muted" id="updated"></p>
+          </div>
+          <div class="controls">
+            <label class="visually-hidden" for="range">Time range</label>
+            <select id="range">
+              <option value="30">Last 30 days</option>
+              <option value="7">Last 7 days</option>
+            </select>
+            <button type="button" id="sign-out" class="outline">Sign out</button>
+          </div>
+        </div>
+
+        <ul data-slot="tiles" class="tiles">
+          <li><span>Visitors</span><strong id="tile-visitors">-</strong><small id="tile-pageviews"></small></li>
+          <li><span>Download clicks</span><strong id="tile-clicks">-</strong><small>on the website's button</small></li>
+          <li><span>App downloads</span><strong id="tile-apps">-</strong><small>from GitHub, every release</small></li>
+          <li><span>Command-line installs</span><strong id="tile-installs">-</strong><small>install script and Homebrew</small></li>
+        </ul>
+
+        <p id="visits-error" class="notice" hidden></p>
+
+        <div data-component="DailyChart" class="card" id="visits-card">
+          <div class="card-head">
+            <h2>Visitors per day</h2>
+            <button type="button" class="link" data-table-for="visits">Show as table</button>
+          </div>
+          <div class="chart" id="visits-chart"></div>
+          <table class="table" id="visits-table" hidden></table>
+        </div>
+
+        <div data-component="DailyChart" class="card" id="downloads-card">
+          <div class="card-head">
+            <h2>Downloads per day</h2>
+            <button type="button" class="link" data-table-for="downloads">Show as table</button>
+          </div>
+          <p class="muted small">From GitHub's daily totals. The first day appears the day after the first snapshot.</p>
+          <div class="chart" id="downloads-chart"></div>
+          <table class="table" id="downloads-table" hidden></table>
+        </div>
+
+        <div class="pair">
+          <div class="card">
+            <h2>Download clicks by system</h2>
+            <p class="muted small">From the website's button, in this range</p>
+            <table class="table" id="clicks-table"></table>
+          </div>
+          <div class="card">
+            <h2>Where visitors came from</h2>
+            <p class="muted small">In this range</p>
+            <table class="table" id="referrers-table"></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Downloads and installs by release</h2>
+          <p class="muted small">From GitHub's counts since each release, which include CI's own install checks and downloads by hand.</p>
+          <div class="scroll"><table class="table" id="releases-table"></table></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

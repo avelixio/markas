@@ -39,7 +39,25 @@ So the install script is counted by the list, and Homebrew by the zip minus the 
 These are estimates: CI's own install checks and anyone who downloads a file by hand count too.
 - Visits to the page are counted by Vercel Web Analytics, which sets no cookies.
 It is turned on in the Vercel dashboard; until then its script answers 404 and nothing is counted.
-- Counting clicks on the download button as events needs a paid Vercel plan, and the GitHub counts already say how many downloads there were.
+- Clicks on the download button are counted without paid custom events: the button opens `/download/<target>` (`windows`, `macos-arm64`, `macos-x64`, `linux`), whose page view is the click, and that page then sends the browser on to the file in the newest release.
+- GitHub keeps only running totals, so the `Download stats` workflow writes each day's totals to `downloads.jsonl` on the `stats` branch, which is never merged.
+Downloads per day are the growth from one day's total to the next.
+
+### The numbers page
+
+Added on 2026-11-19, at the owner's request.
+- `/admin` shows visitors, download clicks, downloads per day and installs by release, for the owner only.
+Its frame is `design/src/screens/landing-admin.mjs`.
+- The data comes from Vercel Functions in `site/api/admin/`: `login`, `logout` and `stats`.
+They need no packages.
+- There is one password, in the Vercel environment variable `ADMIN_PASSWORD`, which must be at least 16 characters; without it the page lets nobody in.
+It is compared in constant time, and a wrong one waits a second.
+- A session is a signed cookie that lasts a week: `__Host-` prefixed, HttpOnly, Secure and SameSite=Strict, and its signing key is made from the password, so changing the password ends every session.
+Signing in and out accepts only requests from the site's own page.
+- `stats` reads the visits with `VERCEL_TOKEN`, a Vercel access token in the environment, and the downloads from GitHub's public counts.
+When one source fails, the others are still shown, with a sentence saying what is missing.
+- The owner's own visits to `/admin` are not counted: that page loads no analytics.
+- The page puts every value in as text, never as HTML, because referrer names come from visitors.
 
 ### Security headers
 

@@ -1,0 +1,337 @@
+/* The private numbers page. Builds on styles.css. */
+.page-name {
+  color: var(--text-3);
+}
+
+.muted {
+  color: var(--text-3);
+}
+
+.small {
+  font-size: 14px;
+}
+
+#main {
+  padding-bottom: 64px;
+}
+
+#sign-in[hidden],
+#numbers[hidden],
+#loading[hidden],
+.notice[hidden],
+.table[hidden] {
+  display: none;
+}
+
+.sign-in {
+  display: grid;
+  gap: 18px;
+  width: min(380px, 100%);
+  margin-top: 40px;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.sign-in h1 {
+  font-size: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  font-weight: 500;
+}
+
+.password {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--raised);
+}
+
+.password:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.password input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 16px var(--font);
+  outline: none;
+}
+
+.ghost {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 36px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.ghost svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.ghost[aria-pressed="true"] {
+  color: var(--accent-text);
+}
+
+.error {
+  min-height: 20px;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+.button.wide {
+  justify-content: center;
+  min-height: 44px;
+  border: 0;
+  font: 600 15px var(--font);
+  cursor: pointer;
+}
+
+.button.wide:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.top h1 {
+  font-size: 28px;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+.controls select,
+.outline {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--text);
+  font: 15px var(--font);
+  cursor: pointer;
+}
+
+.outline {
+  background: transparent;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.tiles li,
+.card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.tiles li {
+  display: grid;
+  gap: 4px;
+}
+
+.tiles span {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.tiles strong {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.tiles small {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.card {
+  margin-top: 16px;
+}
+
+.card h2 {
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.link {
+  min-height: 32px;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: 14px var(--font);
+  cursor: pointer;
+}
+
+.notice {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.pair .card {
+  margin-top: 16px;
+}
+
+.chart {
+  position: relative;
+  margin-top: 16px;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: 200px;
+  overflow: visible;
+}
+
+.chart .bar {
+  fill: var(--accent);
+}
+
+.chart .bar-hit {
+  fill: transparent;
+  cursor: default;
+}
+
+.chart .bar-hit:hover + .bar,
+.chart .bar.active {
+  opacity: 0.75;
+}
+
+.chart .baseline {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.chart .axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.chart .empty {
+  padding: 40px 0;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--raised);
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  transform: translate(-50%, -110%);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table th {
+  color: var(--text-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.table td {
+  color: var(--text-2);
+}
+
+.table td:first-child {
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .tiles strong {
+    font-size: 26px;
+  }
+}
