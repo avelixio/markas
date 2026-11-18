@@ -122,6 +122,15 @@ No key was touched, and the name is only text the bot supplied.
 
 A key that is not shared with a bot is reported exactly like a key that does not exist, so a bot cannot learn which names are taken.
 
+### A key is named after its site by default
+
+Added on 2026-11-18, at the owner's request: a name such as "app.example.com" was refused, while that is the name a person expects.
+- A key name is lower-case letters, digits and dashes, in parts joined by single dots, at most 253 characters, like a host.
+- Capitals are not refused: the name is written in small letters when it is saved, and a bot's request is matched the same way.
+- A new key's name follows its website until the person writes a name of their own: "https://app.example.com/login" gives "app.example.com", and a leading "www." and the port are left out.
+- A second key for the same site gets "-2", "-3" and so on.
+- The rule lives in `NAME_PATTERN` in `src/backend/keyring/keyring-store.ts`, the name from a site in `src/renderer/src/keyring/key-name.ts`.
+
 ## Consequences
 
 - A bot can sign in without ever holding a secret, and a page on the wrong site cannot get one out of the host.

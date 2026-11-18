@@ -3,6 +3,7 @@ import type { BotSummary } from "../../../shared/ipc";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { t } from "../i18n";
 import { Icon } from "../ui/Icon";
+import { keyNameFor, uniqueKeyName } from "./key-name";
 import {
   FILL_POLICIES,
   type FillPolicy,
@@ -21,6 +22,8 @@ interface KeyDialogProps {
   existing: KeySummary | null;
   /** What a new key starts with, when it is added from somewhere that already knows the site. */
   initial?: { name?: string; origin?: string; sharedWith?: string[] };
+  /** Names other keys already have, so a name made from the website does not clash. */
+  takenNames?: string[];
   bots: BotSummary[];
   onSave: (draft: KeyDraft) => Promise<void>;
   onClose: () => void;
@@ -32,6 +35,17 @@ export function KeyDialog(props: KeyDialogProps) {
   const [kind, setKind] = createSignal<KeyKind>(existing?.kind ?? "login");
   const [name, setName] = createSignal(existing?.name ?? props.initial?.name ?? "");
   const [origin, setOrigin] = createSignal(existing?.origin ?? props.initial?.origin ?? "");
+  // A new key's name follows its website until the person writes a name of their own.
+  const [nameTouched, setNameTouched] = createSignal(Boolean(existing || props.initial?.name));
+  const changeName = (next: string) => {
+    setName(next);
+    setNameTouched(next.trim() !== "");
+  };
+  const changeOrigin = (next: string) => {
+    setOrigin(next);
+    if (nameTouched()) return;
+    setName(next.trim() ? uniqueKeyName(keyNameFor(next.trim()), props.takenNames ?? []) : "");
+  };
   const [username, setUsername] = createSignal(existing?.username ?? "");
   const [variable, setVariable] = createSignal(existing?.variable ?? "");
   const [value, setValue] = createSignal("");
@@ -92,7 +106,7 @@ export function KeyDialog(props: KeyDialogProps) {
     setSaving(true);
     setError(null);
     const draft: KeyDraft = {
-      name: name().trim(),
+      name: name().trim().toLowerCase(),
       kind: kind(),
       fillPolicy: fillPolicy(),
       sharedWith: sharedWith(),
@@ -177,7 +191,7 @@ export function KeyDialog(props: KeyDialogProps) {
               id="key-name"
               class="mk-input mk-input--mono"
               value={name()}
-              onInput={(event) => setName(event.currentTarget.value)}
+              onInput={(event) => changeName(event.currentTarget.value)}
               autocomplete="off"
               spellcheck={false}
               required
@@ -209,7 +223,7 @@ export function KeyDialog(props: KeyDialogProps) {
                 id="key-origin"
                 class="mk-input mk-input--mono"
                 value={origin()}
-                onInput={(event) => setOrigin(event.currentTarget.value)}
+                onInput={(event) => changeOrigin(event.currentTarget.value)}
                 placeholder="https://admin.example.com"
                 autocomplete="off"
                 spellcheck={false}

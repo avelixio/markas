@@ -75,7 +75,7 @@ export const en = {
   "keyring.form.kind": "Kind",
   "keyring.form.name": "Name",
   "keyring.form.name.hint":
-    "Bots ask for a key by this name. Lower-case letters, digits and dashes.",
+    "Bots ask for a key by this name. It is filled in from the website, such as app.example.com, and you can change it.",
   "keyring.form.origin": "Website",
   "keyring.form.origin.hint":
     "This exact site only. metrics.example.com and admin.example.com are different sites.",

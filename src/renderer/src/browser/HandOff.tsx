@@ -17,6 +17,7 @@ import {
 import { callHost } from "../host-client";
 import { t } from "../i18n";
 import { KeyDialog } from "../keyring/KeyDialog";
+import { keyNameFor } from "../keyring/key-name";
 import { type KeyDraft, keyringClient } from "../keyring/keyring-client";
 import { Icon } from "../ui/Icon";
 import "./browser.css";
@@ -33,27 +34,6 @@ const SKIP_NOTE =
 /** What the bot is told once a login for the site is in the Keyring. It is written to the bot, not shown. */
 const savedNote = (name: string, site: string) =>
   `The person saved a login for ${site} in the Keyring as "${name}" and shared it with you. Sign in now with markas.keyring_sign_in and that key name. Do not ask the person to type it.`;
-
-/**
- * A name for a new key, made from its website: lower-case letters, digits and dashes, as the
- * Keyring requires. "app.example.com" becomes "app-example-com".
- */
-export function keyNameFor(site: string): string {
-  let host: string;
-  try {
-    host = new URL(site).host;
-  } catch {
-    host = site;
-  }
-  const name = host
-    .toLowerCase()
-    .replace(/^www\./, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 63)
-    .replace(/-+$/, "");
-  return name || "login";
-}
 
 /** The website of an address, when it is one a login can belong to. */
 export function siteOf(url: string | null | undefined): string | null {

@@ -111,7 +111,11 @@ export class KeyringError extends Error {
   }
 }
 
-const NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
+/**
+ * A key name: lower-case letters, digits and dashes, in parts joined by single dots, so a
+ * site's own host such as "app.example.com" is a name as it is. At most as long as a host.
+ */
+const NAME_PATTERN = /^(?=.{1,253}$)[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/;
 const VARIABLE_PATTERN = /^[A-Z_][A-Z0-9_]{0,63}$/;
 
 /**
@@ -287,7 +291,9 @@ export class KeyringStore {
   }
 
   #byName(botId: string, name: string): StoredKey {
-    const stored = this.#state.keys.find((key) => key.name === name);
+    // Names are kept in small letters, so a bot that writes "App.Example.com" still finds the key.
+    const wanted = name.trim().toLowerCase();
+    const stored = this.#state.keys.find((key) => key.name === wanted);
     // A key that exists but is not shared is reported exactly like one that does not exist,
     // so a bot cannot learn which names are taken.
     if (!stored?.sharedWith.includes(botId)) {
@@ -317,10 +323,11 @@ export class KeyringStore {
   }
 
   #validate(input: CreateKeyInput, ownId: string | null) {
-    const name = input.name.trim();
+    // Capitals are not refused, only written small: "App.Example.com" is "app.example.com".
+    const name = input.name.trim().toLowerCase();
     if (!NAME_PATTERN.test(name)) {
       throw new KeyringError(
-        "A key name uses lower-case letters, digits and dashes, and starts with a letter or digit.",
+        'A key name uses letters, digits, dashes and dots, such as "app.example.com", and starts with a letter or digit.',
         "invalid",
       );
     }

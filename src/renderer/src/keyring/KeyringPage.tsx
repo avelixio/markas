@@ -269,6 +269,7 @@ export function KeyringPage() {
         <Match when={dialog()?.type === "add"}>
           <KeyDialog
             existing={null}
+            takenNames={(keys() ?? []).map((key) => key.name)}
             bots={bots() ?? []}
             onSave={save}
             onClose={() => setDialog(null)}

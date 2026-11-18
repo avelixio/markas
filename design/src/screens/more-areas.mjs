@@ -482,8 +482,8 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
         row({ sizingH: "fill", gap: 12, crossAlign: "min" }, [
           field(
             "Name",
-            input("admin-read", { grow: true, mono: true }),
-            "Bots ask for a key by this name.",
+            input("admin.example.com", { grow: true, mono: true }),
+            "Filled in from the website. You can change it.",
           ),
           field(
             "Website",
@@ -495,7 +495,7 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
           "info",
           "info",
           "You can keep several keys for one site",
-          "admin-read and admin-write can both belong to admin.example.com. metrics.example.com is a different site with its own keys.",
+          "admin.example.com and admin.example.com-2 can both belong to admin.example.com. metrics.example.com is a different site with its own keys.",
         ),
         row({ sizingH: "fill", gap: 12, crossAlign: "min" }, [
           field("Username", input("sam@example.com", { grow: true })),
