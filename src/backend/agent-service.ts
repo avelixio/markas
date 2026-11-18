@@ -338,6 +338,8 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   >();
   readonly #scheduledDrains = new Set<string>();
   readonly #drainTasks = new Map<string, Promise<void>>();
+  /** Turn endings still being written down, so stopping waits for them instead of cutting a save. */
+  readonly #endingTurns = new Set<Promise<void>>();
   readonly #lastConversationSignatures = new Map<string, string>();
   readonly #contextBudgets = new Map<string, ThreadContextBudget>();
   readonly #compactingBots = new Set<string>();
@@ -722,6 +724,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#clients.clear();
     await Promise.all(clients.map((client) => client.stop().catch(() => undefined)));
     await Promise.allSettled([...this.#drainTasks.values()]);
+    await Promise.allSettled([...this.#endingTurns]);
     this.#setStatus({ phase: "stopped", message: null });
   }
 
@@ -2059,7 +2062,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           this.#finishContextCompaction(botId, threadId, status);
           return;
         }
-        void this.#completeTurn(botId, threadId, turnId, status);
+        const ending = this.#completeTurn(botId, threadId, turnId, status)
+          .catch((error) => this.#emitError("turn_end_failed", error, botId))
+          .finally(() => this.#endingTurns.delete(ending));
+        this.#endingTurns.add(ending);
         return;
       }
       case "thread/tokenUsage/updated": {
