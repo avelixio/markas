@@ -6,12 +6,15 @@ import type { KeySignIn, KeyUseDecision } from "./sign-in";
 
 export const KEYRING_LIST_TOOL = "keyring_list";
 export const KEYRING_SIGN_IN_TOOL = "keyring_sign_in";
+export const KEYRING_REQUEST_TOOL = "keyring_request";
 
 export const KEYRING_TOOL_DESCRIPTIONS = {
   [KEYRING_LIST_TOOL]:
     "List the saved keys the person has shared with you: each key's name and the one exact website it works on. Values are never included.",
   [KEYRING_SIGN_IN_TOOL]:
     "Sign in to a website with a saved key. First open the site's sign-in page in your browser tab, then name the key. Markas types the username, password and one-time code itself and tells you how it went. You never see the values, so do not ask the person for them.",
+  [KEYRING_REQUEST_TOOL]:
+    "Ask the person to save a login or a token you need, when keyring_list shows none for the site. Give the exact site, what it is for, and the username if you know it. The person types the secret on a card in Markas, never in the chat; you are told only the key's name, then sign in with keyring_sign_in. Never ask for a password or token in the chat instead.",
 } as const;
 
 export const KEYRING_DYNAMIC_TOOLS = [
@@ -34,7 +37,71 @@ export const KEYRING_DYNAMIC_TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    type: "function",
+    name: KEYRING_REQUEST_TOOL,
+    description: KEYRING_TOOL_DESCRIPTIONS[KEYRING_REQUEST_TOOL],
+    inputSchema: {
+      type: "object",
+      properties: {
+        site: {
+          type: "string",
+          description: "The site the key is for, such as https://app.example.com.",
+        },
+        reason: { type: "string", description: "What you need it for, in one sentence." },
+        kind: {
+          type: "string",
+          enum: ["login", "token"],
+          description: "login unless it is an API token.",
+        },
+        username: { type: "string", description: "The username, when you know it." },
+        keyName: {
+          type: "string",
+          description: "A name for the key, when the site's name is not clear.",
+        },
+      },
+      required: ["site", "reason"],
+      additionalProperties: false,
+    },
+  },
 ] as const;
+
+export const KEY_REQUEST_REASON_MAX = 300;
+
+export interface ParsedKeyRequest {
+  kind: "login" | "token";
+  origin: string;
+  username: string | null;
+  keyName: string | null;
+  reason: string;
+}
+
+/** Checks a keyring_request call. The answer is a sentence for the bot when it is not usable. */
+export function parseKeyRequest(input: unknown): ParsedKeyRequest | { problem: string } {
+  const raw = (typeof input === "object" && input !== null ? input : {}) as Record<string, unknown>;
+  const text = (value: unknown, max: number) =>
+    typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, max) : "";
+  const site = text(raw.site, 2048);
+  let origin = "";
+  try {
+    const url = new URL(site);
+    if (url.protocol === "https:" || url.protocol === "http:") origin = url.origin;
+  } catch {
+    origin = "";
+  }
+  if (!origin) {
+    return { problem: "Give the exact site the key is for, such as https://app.example.com." };
+  }
+  const reason = text(raw.reason, KEY_REQUEST_REASON_MAX);
+  if (!reason) return { problem: "Say in one sentence what you need the key for." };
+  return {
+    kind: raw.kind === "token" ? "token" : "login",
+    origin,
+    username: text(raw.username, 200) || null,
+    keyName: text(raw.keyName, 100) || null,
+    reason,
+  };
+}
 
 export function isKeyringTool(tool: string): boolean {
   return tool === KEYRING_LIST_TOOL || tool === KEYRING_SIGN_IN_TOOL;

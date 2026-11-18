@@ -33,6 +33,8 @@ function open() {
   render(() => (
     <KeyDialog existing={null} bots={[]} onSave={async () => undefined} onClose={() => {}} />
   ));
+  // The two-step code waits under More options.
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(t("keyring.form.more")) }));
   // The label also holds the hint under the field, so only its start is matched.
   return screen.getByLabelText(new RegExp(`^${t("keyring.form.twoStep")}`));
 }

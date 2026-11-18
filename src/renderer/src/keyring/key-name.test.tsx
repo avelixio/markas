@@ -52,10 +52,8 @@ describe("the key name in the key form", () => {
         onClose={() => {}}
       />
     ));
-  const nameField = () =>
-    screen.getByLabelText(new RegExp(`^${t("keyring.form.name")}`)) as HTMLInputElement;
-  const siteField = () =>
-    screen.getByLabelText(new RegExp(`^${t("keyring.form.origin")}`)) as HTMLInputElement;
+  const nameField = () => screen.getByLabelText(t("keyring.form.name")) as HTMLInputElement;
+  const siteField = () => screen.getByLabelText(t("keyring.form.origin")) as HTMLInputElement;
 
   it("follows the website until the person writes a name", () => {
     open(["app.example.com"]);

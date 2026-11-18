@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@solidjs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { detectLanguage, setLanguage, t } from "../i18n";
+import { detectLanguage, setLanguage, t, tCount } from "../i18n";
 import { en } from "../i18n/en";
 import { id } from "../i18n/id";
 import { Shell } from "../ui/Shell";
@@ -87,9 +87,10 @@ describe("translations", () => {
   });
 
   it("fills placeholders and follows the chosen language", () => {
-    expect(t("keyring.count", { count: 3 })).toBe("3 keys");
+    expect(tCount("keyring.count", 3)).toBe("3 keys");
+    expect(tCount("keyring.count", 1)).toBe("1 key");
     setLanguage("id");
-    expect(t("keyring.count", { count: 3 })).toBe("3 kunci");
+    expect(tCount("keyring.count", 3)).toBe("3 kunci");
     expect(document.documentElement.lang).toBe("id");
   });
 
@@ -108,16 +109,19 @@ describe("KeyringPage", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
     const dialog = await screen.findByRole("dialog");
-    fireEvent.input(within(dialog).getByLabelText(/^Name/), { target: { value: "admin-read" } });
-    fireEvent.input(within(dialog).getByLabelText(/^Website/), {
+    fireEvent.input(within(dialog).getByLabelText("Name"), { target: { value: "admin-read" } });
+    fireEvent.input(within(dialog).getByLabelText("Website"), {
       target: { value: "admin.example.com" },
     });
-    fireEvent.input(within(dialog).getByLabelText(/^Username/), { target: { value: "sam" } });
-    fireEvent.input(within(dialog).getByLabelText(/^Password/), { target: { value: "pw-12345" } });
+    fireEvent.input(within(dialog).getByLabelText("Username"), { target: { value: "sam" } });
+    fireEvent.input(within(dialog).getByLabelText("Password"), { target: { value: "pw-12345" } });
     fireEvent.click(await within(dialog).findByLabelText("Juno"));
     fireEvent.click(within(dialog).getByRole("button", { name: "Save key" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Saved admin-read. Juno can use it now.",
+    );
     expect(calls.find((call) => call.method === "keyring.create")?.input).toEqual({
       name: "admin-read",
       kind: "login",
@@ -135,12 +139,12 @@ describe("KeyringPage", () => {
     await screen.findByText("No keys yet");
     fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
     const dialog = await screen.findByRole("dialog");
-    fireEvent.input(within(dialog).getByLabelText(/^Name/), { target: { value: "metrics" } });
-    fireEvent.input(within(dialog).getByLabelText(/^Website/), {
+    fireEvent.input(within(dialog).getByLabelText("Name"), { target: { value: "metrics" } });
+    fireEvent.input(within(dialog).getByLabelText("Website"), {
       target: { value: "x.example.com" },
     });
-    fireEvent.input(within(dialog).getByLabelText(/^Username/), { target: { value: "u" } });
-    fireEvent.input(within(dialog).getByLabelText(/^Password/), { target: { value: "pw-12345" } });
+    fireEvent.input(within(dialog).getByLabelText("Username"), { target: { value: "u" } });
+    fireEvent.input(within(dialog).getByLabelText("Password"), { target: { value: "pw-12345" } });
     failNext = 'A key named "metrics" already exists.';
     fireEvent.click(within(dialog).getByRole("button", { name: "Save key" }));
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("already exists");
@@ -152,10 +156,10 @@ describe("KeyringPage", () => {
     await screen.findByText("No keys yet");
     fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
     const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByLabelText("Variable"));
-    expect(within(dialog).getByLabelText(/^Variable name/)).toBeInTheDocument();
-    expect(within(dialog).queryByLabelText(/^Website/)).toBeNull();
-    expect(within(dialog).queryByLabelText(/^Username/)).toBeNull();
+    fireEvent.click(within(dialog).getByLabelText("Environment variable"));
+    expect(within(dialog).getByLabelText("Variable name")).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("Website")).toBeNull();
+    expect(within(dialog).queryByLabelText("Username")).toBeNull();
   });
 
   it("lists two keys on sibling hosts as separate rows", async () => {
@@ -167,8 +171,42 @@ describe("KeyringPage", () => {
     const table = await screen.findByRole("table");
     expect(within(table).getByText("https://metrics.example.com")).toBeInTheDocument();
     expect(within(table).getByText("https://admin.example.com")).toBeInTheDocument();
-    expect(within(table).getByText("No bots")).toBeInTheDocument();
+    // A key no bot can use offers Share, which opens it at its bots.
+    fireEvent.click(within(table).getByRole("button", { name: "Share admin with a bot" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Atlas")).toHaveFocus();
+    expect(within(dialog).getByText("No bot can use this key yet")).toBeInTheDocument();
     expect(screen.getByText("2 keys")).toBeInTheDocument();
+  });
+
+  it("says what is missing next to each field, and starts at the first one", async () => {
+    render(() => <KeyringPage />);
+    await screen.findByText("No keys yet");
+    fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save key" }));
+    const website = within(dialog).getByLabelText("Website");
+    expect(website).toHaveAttribute("aria-invalid", "true");
+    expect(website).toHaveFocus();
+    expect(within(dialog).getByText(t("keyring.form.error.origin"))).toBeInTheDocument();
+    expect(within(dialog).getByText(t("keyring.form.error.username"))).toBeInTheDocument();
+    expect(calls.some((call) => call.method === "keyring.create")).toBe(false);
+    fireEvent.input(website, { target: { value: "https://app.example.com" } });
+    expect(website).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("keeps the two-step code and the fill rule folded until asked for", async () => {
+    render(() => <KeyringPage />);
+    await screen.findByText("No keys yet");
+    fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+    const twoStep = new RegExp(`^${t("keyring.form.twoStep")}`);
+    expect(within(dialog).queryByLabelText(twoStep)).toBeNull();
+    const more = within(dialog).getByRole("button", { name: /More options/ });
+    expect(more).toHaveTextContent("Automatically, no two-step code");
+    fireEvent.click(more);
+    expect(more).toHaveAttribute("aria-expanded", "true");
+    expect(within(dialog).getByLabelText(twoStep)).toBeInTheDocument();
   });
 
   it("shows a value only after a confirmation, and hides it again", async () => {

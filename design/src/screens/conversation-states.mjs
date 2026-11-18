@@ -309,6 +309,65 @@ const secretCard = col(
   ],
 );
 
+// A bot asks for a login with markas.keyring_request. The card is filled in from the request;
+// the person types the secret here, and the bot is told only the key's name.
+const loginRequestCard = col(
+  {
+    name: "KeyRequestCard",
+    sizingH: "fill",
+    gap: 12,
+    padding: 14,
+    cornerRadius: RADIUS.card,
+    fill: c.surface,
+    ...outline(c.accent),
+  },
+  [
+    row({ gap: 8, sizingH: "fill" }, [
+      icon("key", c.accentText),
+      t("Atlas asks for a login", "bodyStrong"),
+      hspace(),
+      chip("Goes straight to the keyring", { toneName: "accent", iconName: "lock" }),
+    ]),
+    para(
+      "To read the weekly report on https://reports.example.com. What you type here is never shown to Atlas, the model or this chat.",
+      "small",
+      c.text2,
+    ),
+    row({ gap: 10, sizingH: "fill" }, [
+      col({ gap: 6, sizingH: "fill" }, [
+        t("Username", "smallStrong", c.text2),
+        input("sam@example.com", { grow: true }),
+      ]),
+      col({ gap: 6, sizingH: "fill" }, [
+        t("Password", "smallStrong", c.text2),
+        input("••••••••••••••••", { grow: true, trailing: icon("eye", c.text3) }),
+      ]),
+    ]),
+    row({ gap: 8, sizingH: "fill" }, [
+      button("Save and let Atlas use it", { kind: "primary", iconName: "lock" }),
+      button("More options", { kind: "ghost" }),
+      button("Not now", { kind: "ghost" }),
+      hspace(),
+      t("Saved as reports.example.com, for Atlas only", "small", c.text3),
+    ]),
+  ],
+);
+
+const loginRequest = appScreen("11b A bot asks for a login", "Chats", [
+  sidebar({ active: "Atlas" }),
+  conversation("atlas", {
+    header: { state: "waiting", panel: "none" },
+    messages: [
+      dayMarker("Today"),
+      botMessage("atlas", "09:00", [
+        "The weekly report needs a sign-in, and no key for that site is shared with me yet.",
+        loginRequestCard,
+      ]),
+    ],
+    composerProps: {},
+  }),
+]);
+
 const cards = appScreen("11 Approval and secure entry cards", "Chats", [
   sidebar({ active: "Pico" }),
   conversation("pico", {
@@ -334,6 +393,7 @@ export default [
   { name: "07 Bot to bot work", spec: team },
   { name: "10 Browser hand-off", spec: takeover },
   { name: "11 Approval and secure entry cards", spec: cards },
+  { name: "11b A bot asks for a login", spec: loginRequest },
 ];
 
 export { BOTS };

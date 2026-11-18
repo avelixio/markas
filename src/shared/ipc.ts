@@ -571,6 +571,23 @@ export interface AgentPromptQuestion {
      */
     covers?: "site" | "key";
   };
+  /**
+   * Set when a bot asks for a key it does not have. The card asks the person for the secret
+   * and saves it in the Keyring, shared with that bot; the bot is told only the key's name.
+   */
+  keyRequest?: KeyRequest;
+}
+
+/** What a bot asked for with markas.keyring_request. Never a secret: only where and what for. */
+export interface KeyRequest {
+  botId: string;
+  kind: "login" | "token";
+  /** The exact site: scheme, host and port. */
+  origin: string;
+  /** The name the key starts with: made from the site, or the one the bot suggested. */
+  name: string;
+  username: string | null;
+  reason: string;
 }
 
 /**

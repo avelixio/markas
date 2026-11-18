@@ -2,6 +2,7 @@ import { createSignal, For, Show } from "solid-js";
 import type { AgentPromptQuestion } from "../../../shared/ipc";
 import { PermissionCard } from "../access/AccessControl";
 import { t } from "../i18n";
+import { KeyRequestCard } from "../keyring/KeyRequestCard";
 
 export function ChoiceCard(props: {
   title: string;
@@ -81,6 +82,22 @@ export function PromptCard(props: {
   botName?: string;
   onSubmit: (answers: Record<string, string[]>) => Promise<boolean>;
 }) {
+  // A bot asking for a key gets a card that saves it, so the secret never enters the chat.
+  const keyRequest = props.questions.find((question) => question.keyRequest);
+  if (keyRequest?.keyRequest) {
+    const options = keyRequest.options ?? [];
+    return (
+      <KeyRequestCard
+        request={keyRequest.keyRequest}
+        botName={props.botName ?? t("prompt.bot")}
+        onAnswer={(saved) =>
+          props.onSubmit({
+            [keyRequest.id]: [(saved ? options[0] : options.at(-1))?.label ?? ""],
+          })
+        }
+      />
+    );
+  }
   // A bot asking permission gets its own card: what it wants, and a clear yes or no.
   const permission = props.questions.find((question) => question.permission);
   if (permission) {

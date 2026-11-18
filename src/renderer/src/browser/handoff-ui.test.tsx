@@ -66,14 +66,14 @@ describe("HandOffCard", () => {
     fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
 
     // The dialog already knows the site and who asked.
-    const website = await screen.findByLabelText(/^Website/);
+    const website = await screen.findByLabelText("Website");
     expect(website).toHaveValue("https://admin.example.com");
     // The name is the site's own host.
-    expect(screen.getByLabelText(/^Name/)).toHaveValue("admin.example.com");
-    fireEvent.input(screen.getByLabelText(/^Username/), {
+    expect(screen.getByLabelText("Name")).toHaveValue("admin.example.com");
+    fireEvent.input(screen.getByLabelText("Username"), {
       target: { value: "sam" },
     });
-    fireEvent.input(screen.getByLabelText(/^Password/), {
+    fireEvent.input(screen.getByLabelText("Password"), {
       target: { value: "open-sesame-not-real" },
     });
     fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
@@ -112,9 +112,9 @@ describe("HandOffCard", () => {
       />
     ));
     fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
-    await screen.findByLabelText(/^Website/);
-    fireEvent.input(screen.getByLabelText(/^Username/), { target: { value: "sam" } });
-    fireEvent.input(screen.getByLabelText(/^Password/), {
+    await screen.findByLabelText("Website");
+    fireEvent.input(screen.getByLabelText("Username"), { target: { value: "sam" } });
+    fireEvent.input(screen.getByLabelText("Password"), {
       target: { value: "open-sesame-not-real" },
     });
     fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
@@ -138,9 +138,9 @@ describe("HandOffCard", () => {
       />
     ));
     fireEvent.click(screen.getByRole("button", { name: t("handoff.saveKey") }));
-    await screen.findByLabelText(/^Website/);
-    fireEvent.input(screen.getByLabelText(/^Username/), { target: { value: "sam" } });
-    fireEvent.input(screen.getByLabelText(/^Password/), { target: { value: "x-not-real" } });
+    await screen.findByLabelText("Website");
+    fireEvent.input(screen.getByLabelText("Username"), { target: { value: "sam" } });
+    fireEvent.input(screen.getByLabelText("Password"), { target: { value: "x-not-real" } });
     fireEvent.click(screen.getByRole("button", { name: t("keyring.form.save") }));
     await waitFor(() => expect(calls.at(-1)?.method).toBe("browser.resumeControl"));
     expect(told).toEqual([]);

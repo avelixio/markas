@@ -4,6 +4,10 @@ What changed in Markas, newest first.
 
 ## Unreleased
 
+- A bot can ask for a login or a token it needs: a card in the chat asks you for the secret and saves it in the Keyring for that bot only. The bot is told only the key's name, never the value.
+- Adding a key is simpler: the website comes first and names the key, the two-step code and when bots use it wait under More options, and what is missing is said next to each field.
+- A key that no bot can use is flagged when you save it and offers Share in the Keyring; after saving, the Keyring says which bots can use it.
+- The Keyring list has plainer column names, bigger buttons, "1 key" instead of "1 keys", and one Add key button when it is empty.
 - Send feedback, from the account menu or Settings: report a bug or share an idea as a GitHub issue, opened with your own GitHub account or sent directly without one. You see every detail about your computer that goes with it, and can leave them out.
 
 ## 0.1.2 - 2026-11-18

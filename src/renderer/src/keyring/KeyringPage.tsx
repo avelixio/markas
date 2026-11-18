@@ -1,7 +1,7 @@
 import { createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js";
 import type { BotSummary } from "../../../shared/ipc";
 import { AgentAvatar } from "../components/AgentAvatar";
-import { language, t } from "../i18n";
+import { language, t, tCount } from "../i18n";
 import { Icon } from "../ui/Icon";
 import type { IconName } from "../ui/icons";
 import { KeyDialog } from "./KeyDialog";
@@ -14,7 +14,7 @@ const REVEAL_MS = 30_000;
 
 type Dialog =
   | { type: "add" }
-  | { type: "edit"; key: KeySummary }
+  | { type: "edit"; key: KeySummary; share?: boolean }
   | { type: "reveal"; key: KeySummary }
   | { type: "remove"; key: KeySummary };
 
@@ -31,8 +31,13 @@ export function KeyringPage() {
   const [dialog, setDialog] = createSignal<Dialog | null>(null);
   const [revealed, setRevealed] = createSignal<Revealed | null>(null);
   const [actionError, setActionError] = createSignal<string | null>(null);
+  const [saved, setSaved] = createSignal<string | null>(null);
   let revealTimer: ReturnType<typeof setTimeout> | undefined;
-  onCleanup(() => clearTimeout(revealTimer));
+  let savedTimer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => {
+    clearTimeout(revealTimer);
+    clearTimeout(savedTimer);
+  });
 
   const botName = (id: string) => bots()?.find((bot) => bot.id === id);
   const lastUsed = (key: KeySummary) =>
@@ -48,6 +53,15 @@ export function KeyringPage() {
     if (current?.type === "edit") await keyringClient.update(current.key.id, draft);
     else await keyringClient.create(draft);
     setDialog(null);
+    // Saying who can use it now is the check that the key was shared as meant.
+    const names = draft.sharedWith.map((id) => botName(id)?.name ?? id);
+    setSaved(
+      names.length > 0
+        ? t("keyring.saved.shared", { name: draft.name, bots: names.join(", ") })
+        : t("keyring.saved.unshared", { name: draft.name }),
+    );
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(() => setSaved(null), 8000);
     await refetch();
   };
 
@@ -85,17 +99,28 @@ export function KeyringPage() {
           <h1 id="keyring-title">{t("keyring.title")}</h1>
           <p>{t("keyring.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          class="mk-button mk-button--primary"
-          onClick={() => setDialog({ type: "add" })}
-        >
-          <Icon name="plus" />
-          {t("keyring.add")}
-        </button>
+        {/* An empty Keyring has its own Add key in the middle; one is enough. */}
+        <Show when={!keys.error && !keys.loading && (keys()?.length ?? 0) > 0}>
+          <button
+            type="button"
+            class="mk-button mk-button--primary"
+            onClick={() => setDialog({ type: "add" })}
+          >
+            <Icon name="plus" />
+            {t("keyring.add")}
+          </button>
+        </Show>
       </header>
 
       <div data-slot="body" class="mk-page__body">
+        <Show when={saved()}>
+          {(message) => (
+            <p data-slot="saved" class="mk-form-ok" role="status">
+              <Icon name="check" size={12} />
+              {message()}
+            </p>
+          )}
+        </Show>
         <Show when={actionError()}>
           <p class="mk-form-error" role="alert">
             <Icon name="warning" size={12} />
@@ -128,6 +153,7 @@ export function KeyringPage() {
               </span>
               <h2>{t("keyring.empty.title")}</h2>
               <p>{t("keyring.empty.body")}</p>
+              <p>{t("keyring.notice.body")}</p>
               <button
                 type="button"
                 class="mk-button mk-button--primary"
@@ -139,19 +165,11 @@ export function KeyringPage() {
             </div>
           </Match>
           <Match when={keys()}>
-            <div class="mk-notice mk-notice--accent">
-              <Icon name="lock" />
-              <div>
-                <strong>{t("keyring.notice.title")}</strong>
-                <span>{t("keyring.notice.body")}</span>
-              </div>
-            </div>
             <div class="mk-table-scroll">
               <table data-slot="table" class="mk-table">
                 <thead>
                   <tr>
                     <th scope="col">{t("keyring.column.name")}</th>
-                    <th scope="col">{t("keyring.column.kind")}</th>
                     <th scope="col">{t("keyring.column.bound")}</th>
                     <th scope="col">{t("keyring.column.shared")}</th>
                     <th scope="col">{t("keyring.column.fills")}</th>
@@ -166,10 +184,21 @@ export function KeyringPage() {
                     {(key) => (
                       <tr data-key={key.name}>
                         <th scope="row">
-                          <span class="mk-mono">{key.name}</span>
-                          <Show when={key.username}>
-                            <small>{key.username}</small>
-                          </Show>
+                          <span class="mk-key-name">
+                            <Icon name={KIND_ICONS[key.kind]} size={14} />
+                            <span class="mk-key-name__text">
+                              <span class="mk-mono">{key.name}</span>
+                              <small>{key.username ?? t(`keyring.kind.${key.kind}`)}</small>
+                              <Show when={key.hasTwoStepCode}>
+                                <span class="mk-key-chips">
+                                  <span class="mk-chip">
+                                    <Icon name="clock" size={12} />
+                                    {t("keyring.twoStep")}
+                                  </span>
+                                </span>
+                              </Show>
+                            </span>
+                          </span>
                           <Show when={revealed()?.id === key.id}>
                             <output class="mk-revealed" aria-live="polite">
                               <span>{t("keyring.reveal.value", { name: key.name })}</span>
@@ -188,23 +217,21 @@ export function KeyringPage() {
                             </output>
                           </Show>
                         </th>
-                        <td>
-                          <span class="mk-chip">
-                            <Icon name={KIND_ICONS[key.kind]} size={12} />
-                            {t(`keyring.kind.${key.kind}`)}
-                          </span>
-                          <Show when={key.hasTwoStepCode}>
-                            <span class="mk-chip">
-                              <Icon name="clock" size={12} />
-                              {t("keyring.twoStep")}
-                            </span>
-                          </Show>
-                        </td>
                         <td class="mk-mono">{key.origin ?? key.variable}</td>
                         <td>
                           <Show
                             when={key.sharedWith.length > 0}
-                            fallback={<span class="mk-quiet">{t("keyring.shared.none")}</span>}
+                            fallback={
+                              <button
+                                type="button"
+                                class="mk-button mk-button--small mk-button--ghost"
+                                aria-label={t("keyring.shareWith", { name: key.name })}
+                                onClick={() => setDialog({ type: "edit", key, share: true })}
+                              >
+                                <Icon name="plus" size={12} />
+                                {t("keyring.share")}
+                              </button>
+                            }
                           >
                             <span class="mk-sigil-row">
                               <For each={key.sharedWith}>
@@ -260,7 +287,7 @@ export function KeyringPage() {
                 </tbody>
               </table>
             </div>
-            <p class="mk-quiet">{t("keyring.count", { count: keys()?.length ?? 0 })}</p>
+            <p class="mk-quiet">{tCount("keyring.count", keys()?.length ?? 0)}</p>
           </Match>
         </Switch>
       </div>
@@ -279,6 +306,7 @@ export function KeyringPage() {
           {(key) => (
             <KeyDialog
               existing={key()}
+              focusSharing={(dialog() as { share?: boolean } | null)?.share === true}
               bots={bots() ?? []}
               onSave={save}
               onClose={() => setDialog(null)}

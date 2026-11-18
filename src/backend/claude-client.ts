@@ -31,6 +31,7 @@ import type { AgentProvider } from "./agent-client";
 import type { ClaudeCliInfo } from "./cli";
 import {
   KEYRING_LIST_TOOL,
+  KEYRING_REQUEST_TOOL,
   KEYRING_SIGN_IN_TOOL,
   KEYRING_TOOL_DESCRIPTIONS,
 } from "./keyring/key-tools";
@@ -679,6 +680,18 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
             KEYRING_TOOL_DESCRIPTIONS[KEYRING_SIGN_IN_TOOL],
             { keyName: z.string().optional(), keyId: z.string().optional() },
             (args) => call("markas", KEYRING_SIGN_IN_TOOL, args),
+          ),
+          tool(
+            KEYRING_REQUEST_TOOL,
+            KEYRING_TOOL_DESCRIPTIONS[KEYRING_REQUEST_TOOL],
+            {
+              site: z.string().min(1).max(2048),
+              reason: z.string().min(1).max(300),
+              kind: z.enum(["login", "token"]).optional(),
+              username: z.string().max(200).optional(),
+              keyName: z.string().max(100).optional(),
+            },
+            (args) => call("markas", KEYRING_REQUEST_TOOL, args),
           ),
         ],
       }),

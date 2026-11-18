@@ -132,6 +132,28 @@ Spaces at the ends are dropped, a run of spaces, tabs or line breaks becomes one
 - A second key for the same site gets "-2", "-3" and so on.
 - The rule lives in `cleanName` and `sameName` in `src/backend/keyring/keyring-store.ts`, the name from a site in `src/renderer/src/keyring/key-name.ts`.
 
+### A bot can ask for a key it does not have
+
+Added on 2026-11-19, at the owner's request: a bot should be able to get a key added itself.
+- A third tool, `keyring_request`, takes the exact site, what the key is for, and optionally the username, the kind (`login` or `token`) and a name.
+- If a key of that kind for that site is already shared with the bot, the bot is told its name and nobody is asked.
+- Otherwise a card appears in the chat, filled in from the request: the site, the reason, the username and a name made from the site.
+The person types the secret on that card, which saves it in the Keyring shared with the asking bot only, or opens the full key dialog from More options.
+- The bot is told only the name of the key that was saved, then signs in with `keyring_sign_in`.
+A no, or a key saved without sharing it with the bot, is told to the bot in one sentence.
+- The secret never passes through the bot, the model or the chat: the bot's request carries no value, and the card writes straight to the Keyring.
+- Bots are told to use `keyring_request` instead of asking for a password in the chat; `hand_off` stays for a step the person must do on the page itself.
+
+### The key dialog, audited
+
+Changed on 2026-11-19 after a UI UX Pro Max audit, because adding a key showed nine choices at once.
+- Fields come in the order a person fills them, in one column: the website, the username and secret, then the name made from the website.
+- The two-step setup key and the fill rule wait under More options, with a one-line summary; they open by themselves when a key already uses them.
+- Saving checks every field in the dialog and says what is missing next to it, focusing the first one; the browser's own bubbles are not used.
+- A key that no bot can use is still saved, but the dialog warns once the key has a site, and the list offers Share for it.
+- After saving, the Keyring says which bots can use the key now.
+- The kinds are named "Website login", "API token" and "Environment variable", and the fill rules "Automatically", "Ask me first" and "I sign in myself".
+
 ## Consequences
 
 - A bot can sign in without ever holding a secret, and a page on the wrong site cannot get one out of the host.

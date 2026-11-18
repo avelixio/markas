@@ -72,3 +72,223 @@
   font-family: var(--mk-font-mono);
   overflow-wrap: anywhere;
 }
+
+/* The key dialog, audited 2026-11-19: one column in the order a person fills it. */
+.mk-key-dialog {
+  width: min(560px, 100%);
+}
+
+.mk-key-dialog__fields {
+  display: grid;
+  gap: 14px;
+}
+
+.mk-key-dialog .mk-field > label {
+  padding: 0;
+  color: var(--mk-text-secondary);
+  font: 600 12px / 16px var(--mk-font-ui);
+}
+
+.mk-key-dialog__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.mk-key-dialog__pair.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mk-key-dialog__input {
+  position: relative;
+}
+
+.mk-key-dialog__input .mk-input {
+  width: 100%;
+}
+
+.mk-key-dialog__input.has-trailing .mk-input {
+  padding-right: 40px;
+}
+
+.mk-key-dialog__peek {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--mk-radius-control);
+  background: transparent;
+  color: var(--mk-text-tertiary);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.mk-key-dialog__peek[aria-pressed="true"] {
+  color: var(--mk-accent-text);
+}
+
+.mk-key-dialog__peek:focus-visible {
+  outline: 2px solid var(--mk-accent-base);
+}
+
+.mk-input.is-invalid {
+  border-color: var(--mk-danger-base);
+}
+
+.mk-key-dialog__more {
+  display: grid;
+  gap: 12px;
+}
+
+.mk-key-dialog__more-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mk-text-secondary);
+  font: 13px / 20px var(--mk-font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mk-key-dialog__more-toggle strong {
+  font-weight: 600;
+}
+
+.mk-key-dialog__more-toggle span {
+  color: var(--mk-text-tertiary);
+  font-size: 12px;
+}
+
+.mk-key-dialog__more-toggle:focus-visible {
+  outline: 2px solid var(--mk-accent-base);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mk-key-dialog__more-body {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--mk-border-subtle);
+  border-radius: var(--mk-radius-card, 10px);
+}
+
+/* The list: the kind sits with the name, and the row's actions are easy to hit. */
+.mk-key-name {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mk-key-name > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--mk-text-tertiary);
+}
+
+.mk-key-name__text {
+  display: grid;
+  gap: 2px;
+}
+
+.mk-key-name__text small {
+  color: var(--mk-text-tertiary);
+}
+
+.mk-key-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mk-table__actions .mk-icon-button {
+  width: 32px;
+  height: 32px;
+}
+
+@media (max-width: 560px) {
+  .mk-key-dialog__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A bot asks for a key: the secret is typed here, straight into the Keyring. */
+.mk-key-request {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--mk-accent-base);
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-bg-surface);
+}
+
+.mk-key-request__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--mk-accent-text);
+}
+
+.mk-key-request__header strong {
+  color: var(--mk-text-primary);
+}
+
+.mk-key-request__safe {
+  margin-left: auto;
+  color: var(--mk-accent-text);
+}
+
+.mk-key-request p {
+  margin: 0;
+  color: var(--mk-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.mk-key-request__site {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mk-key-request__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mk-key-request__fields.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mk-key-request__fields .mk-input {
+  width: 100%;
+}
+
+.mk-key-request__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-key-request__actions small {
+  margin-left: auto;
+  color: var(--mk-text-tertiary);
+}
+
+@media (max-width: 560px) {
+  .mk-key-request__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

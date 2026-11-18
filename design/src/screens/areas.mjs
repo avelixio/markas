@@ -196,8 +196,15 @@ const routines = page(
 
 // ----- Vault -----
 
-const kind = (label, iconName) => chip(label, { iconName });
+const keyName = (name, iconName, sub) =>
+  row({ gap: 8 }, [
+    icon(iconName, c.text3, 14),
+    col({ gap: 0 }, [t(name, "mono", c.text), sub ? t(sub, "small", c.text3) : null]),
+  ]);
+const share = () => button("Share", { size: "sm", kind: "ghost", iconName: "plus" });
 
+// Audited on 2026-11-19: the kind sits with the name, plain column names, a key no bot can use
+// offers Share, and the lock notice belongs to the empty Keyring only.
 const vault = page(
   "12 Keyring",
   "Keyring",
@@ -210,76 +217,55 @@ const vault = page(
     ],
   ),
   [
-    banner(
-      "accent",
-      "lock",
-      "The keyring is locked to this computer",
-      "The master key lives in the system keychain. Each key is bound to one exact site, so two logins on sibling hosts never mix.",
-    ),
     table(
       [
         { label: "Name" },
-        { label: "Kind", width: 130 },
-        { label: "Bound to", width: 290 },
-        { label: "Shared with", width: 120 },
-        { label: "Fills", width: 110 },
+        { label: "Website", width: 290 },
+        { label: "Bots", width: 140 },
+        { label: "Bots use it", width: 130 },
         { label: "Last used", width: 110 },
-        { label: "", width: 28 },
+        { label: "", width: 104 },
       ],
       [
         [
-          "Metrics (Atlas)",
-          kind("Login", "user"),
+          keyName("metrics.example.com", "user", "sam@example.com"),
           mono("https://metrics.example.com"),
           bots(["atlas", "sol"]),
-          "Automatic",
+          "Automatically",
           "Today 09:00",
-          icon("more", c.text3),
+          row({ gap: 4 }, [icon("pencil", c.text3), icon("eye", c.text3), icon("trash", c.text3)]),
         ],
         [
-          "Metrics (ops)",
-          kind("Login", "user"),
+          keyName("Ops metrics", "user", "ops@example.com"),
           mono("https://metrics.ops.example.com"),
           bots(["juno"]),
-          "Ask me",
+          "After asking you",
           "Never",
-          icon("more", c.text3),
+          row({ gap: 4 }, [icon("pencil", c.text3), icon("eye", c.text3), icon("trash", c.text3)]),
         ],
         [
-          "Admin console (Juno)",
-          kind("Login", "user"),
+          keyName("admin.example.com", "user", "sam@example.com"),
           mono("https://admin.example.com"),
-          bots(["juno"]),
-          "Automatic",
-          "Today 08:45",
-          icon("more", c.text3),
-        ],
-        [
-          "Admin console code",
-          kind("One-time code", "clock"),
-          mono("https://admin.example.com"),
-          bots(["juno"]),
-          "Hand-off only",
+          share(),
+          "Automatically",
           "Never",
-          icon("more", c.text3),
+          row({ gap: 4 }, [icon("pencil", c.text3), icon("eye", c.text3), icon("trash", c.text3)]),
         ],
         [
-          "chat-cli",
-          kind("Command variable", "terminal"),
+          keyName("chat-cli", "terminal", "Environment variable"),
           mono("CHAT_TOKEN"),
           bots(["pico", "atlas"]),
-          "At start",
+          "",
           "Today 06:00",
-          icon("more", c.text3),
+          row({ gap: 4 }, [icon("pencil", c.text3), icon("eye", c.text3), icon("trash", c.text3)]),
         ],
         [
-          "Gateway key",
-          kind("Bearer", "key"),
+          keyName("Gateway key", "key", "API token"),
           mono("https://gateway.example.com"),
           bots(["mika", "juno"]),
-          "Automatic",
+          "Automatically",
           "Today 05:00",
-          icon("more", c.text3),
+          row({ gap: 4 }, [icon("pencil", c.text3), icon("eye", c.text3), icon("trash", c.text3)]),
         ],
       ],
       { selected: 0 },
@@ -288,7 +274,7 @@ const vault = page(
       icon("eye", c.text3, 12),
       t("Showing a value asks you to confirm and is written to the logbook.", "small", c.text3),
       hspace(),
-      t("6 keys · 2 logins share the name of a parent site and stay separate", "small", c.text3),
+      t("5 keys", "small", c.text3),
     ]),
   ],
 );

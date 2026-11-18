@@ -447,13 +447,16 @@ const shareBot = (key, on) =>
 
 const keyringBehind = areas.find((area) => area.name === "12 Keyring").spec;
 
+// Audited on 2026-11-19: one column in the order a person fills it, the website first and
+// the name made from it, the bots before Save with a warning when none is picked, and the
+// two-step code and the fill rule folded under More options.
 const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true }, [
   keyringBehind,
   row({ x: 0, y: 0, width: 1440, height: 900, mainAlign: "center", fill: c.scrim }, [
     col(
       {
         name: "Dialog",
-        width: 600,
+        width: 560,
         padding: 24,
         gap: 14,
         cornerRadius: RADIUS.panel,
@@ -478,24 +481,11 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
           ]),
           icon("close", c.text2),
         ]),
-        segmented(["Login", "Token", "Variable"], 0, { grow: true }),
-        row({ sizingH: "fill", gap: 12, crossAlign: "min" }, [
-          field(
-            "Name",
-            input("admin.example.com", { grow: true, mono: true }),
-            "Starts as the website. Any name works.",
-          ),
-          field(
-            "Website",
-            input("https://admin.example.com", { grow: true, mono: true }),
-            "This exact site only.",
-          ),
-        ]),
-        banner(
-          "info",
-          "info",
-          "You can keep several keys for one site",
-          "admin.example.com and admin.example.com-2 can both belong to admin.example.com. metrics.example.com is a different site with its own keys.",
+        segmented(["Website login", "API token", "Environment variable"], 0, { grow: true }),
+        field(
+          "Website",
+          input("https://admin.example.com/login", { grow: true, mono: true }),
+          "Only this exact site. admin.example.com and metrics.example.com are different sites.",
         ),
         row({ sizingH: "fill", gap: 12, crossAlign: "min" }, [
           field("Username", input("sam@example.com", { grow: true })),
@@ -504,34 +494,26 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
             input("••••••••••••••••", { grow: true, trailing: icon("eye", c.text3) }),
           ),
         ]),
-        row({ sizingH: "fill", gap: 12, crossAlign: "min" }, [
-          field(
-            "Two-step code",
-            input("Paste the setup key from the site", {
-              placeholder: true,
-              grow: true,
-              iconName: "clock",
-            }),
-            "Optional. Markas then makes the 6 digit code itself.",
-          ),
-          field(
-            "When a bot needs it",
-            segmented(["Automatic", "Ask me", "Hand-off only"], 0, { grow: true }),
-            "Automatic lets rounds run with nobody at the keyboard.",
-          ),
-        ]),
+        field(
+          "Name",
+          input("admin.example.com", { grow: true, mono: true }),
+          "Bots ask for the key by this name. It comes from the website; any name works.",
+        ),
         col({ gap: 6, sizingH: "fill" }, [
-          t("Shared with", "smallStrong", c.text2),
+          t("Which bots may use it", "smallStrong", c.text2),
           row({ gap: 8, sizingH: "fill", wrap: true, crossGap: 8 }, [
             shareBot("juno", true),
             shareBot("atlas", false),
             shareBot("mika", false),
             shareBot("pico", false),
           ]),
-          t("Only these bots can use this key. Nobody else even sees its name.", "small", c.text3),
         ]),
         row({ sizingH: "fill", gap: 8 }, [
-          button("Import from CSV", { kind: "ghost", iconName: "download" }),
+          icon("chevronRight", c.text2, 14),
+          t("More options", "bodyStrong", c.text2),
+          t("Automatic, no two-step code", "small", c.text3),
+        ]),
+        row({ sizingH: "fill", gap: 8 }, [
           hspace(),
           button("Cancel", { kind: "ghost" }),
           button("Save key", { kind: "primary", iconName: "lock" }),
@@ -541,9 +523,89 @@ const addKey = box({ name: "25 Add a key", width: 1440, height: 900, clip: true 
   ]),
 ]);
 
+const keyringNoBot = box(
+  { name: "25b Add a key, no bot picked", width: 1440, height: 900, clip: true },
+  [
+    keyringBehind,
+    row({ x: 0, y: 0, width: 1440, height: 900, mainAlign: "center", fill: c.scrim }, [
+      col(
+        {
+          name: "Dialog",
+          width: 560,
+          padding: 24,
+          gap: 14,
+          cornerRadius: RADIUS.panel,
+          fill: c.surface,
+          ...outline(c.lineStrong),
+        },
+        [
+          t("Add a key", "title"),
+          field("Website", input("", { grow: true, mono: true }), null),
+          row({ gap: 6 }, [
+            icon("warning", c.danger, 12),
+            t(
+              "Write the website this key is for, such as https://app.example.com.",
+              "small",
+              c.danger,
+            ),
+          ]),
+          col({ gap: 6, sizingH: "fill" }, [
+            t("Which bots may use it", "smallStrong", c.text2),
+            row({ gap: 8, sizingH: "fill", wrap: true, crossGap: 8 }, [
+              shareBot("juno", false),
+              shareBot("atlas", false),
+            ]),
+            banner(
+              "warn",
+              "warning",
+              "No bot can use this key yet",
+              "You can save it now and share it later from the Keyring.",
+            ),
+          ]),
+          col(
+            {
+              gap: 10,
+              sizingH: "fill",
+              padding: 12,
+              cornerRadius: RADIUS.card,
+              ...outline(c.line),
+            },
+            [
+              row({ gap: 8 }, [
+                icon("chevronDown", c.text2, 14),
+                t("More options", "bodyStrong", c.text2),
+              ]),
+              field(
+                "Two-step setup key",
+                input("Paste the setup key from the site", {
+                  placeholder: true,
+                  grow: true,
+                  iconName: "clock",
+                }),
+                "Optional. Markas then makes the 6 digit code itself.",
+              ),
+              field(
+                "When a bot needs it",
+                segmented(["Automatically", "Ask me first", "I sign in myself"], 0, { grow: true }),
+                "Automatically lets rounds run with nobody at the keyboard.",
+              ),
+            ],
+          ),
+          row({ sizingH: "fill", gap: 8 }, [
+            hspace(),
+            button("Cancel", { kind: "ghost" }),
+            button("Save key", { kind: "primary", iconName: "lock" }),
+          ]),
+        ],
+      ),
+    ]),
+  ],
+);
+
 export default [
   { name: "22 Fuel", spec: fuel },
   { name: "23 Archive", spec: archive },
   { name: "24 Rounds, calendar", spec: calendar },
   { name: "25 Add a key", spec: addKey },
+  { name: "25b Add a key, no bot picked", spec: keyringNoBot },
 ];

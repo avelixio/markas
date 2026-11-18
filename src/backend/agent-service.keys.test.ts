@@ -322,6 +322,114 @@ describe("AgentService keyring tools", () => {
   });
 });
 
+describe("a bot asking for a key", () => {
+  const textOf = async (client: FakeAgentClient, id: string) => {
+    await waitFor(() => client.responses.some((response) => response.id === id));
+    const result = client.responses.find((response) => response.id === id)?.result as {
+      success: boolean;
+      contentItems: Array<{ text: string }>;
+    };
+    return { success: result.success, text: result.contentItems[0]?.text ?? "" };
+  };
+
+  it("is offered to bots and told to them instead of asking in the chat", async () => {
+    const { client } = await setup();
+    const start = client.requests.find((request) => request.method === "thread/start");
+    expect(JSON.stringify(start?.params)).toContain("keyring_request");
+  });
+
+  it("answers with the key it already has, without asking the person", async () => {
+    const { client, call, prompts } = await setup();
+    const answer = await textOf(
+      client,
+      call("keyring_request", { site: `${SITE}/sign-in`, reason: "To read the report." }),
+    );
+    expect(answer.success).toBe(true);
+    expect(answer.text).toContain('"work-login"');
+    expect(prompts()).toHaveLength(0);
+  });
+
+  it("refuses a request without an exact site or a reason", async () => {
+    const { client, call } = await setup();
+    expect(
+      (await textOf(client, call("keyring_request", { site: "reports", reason: "x" }))).text,
+    ).toMatch(/exact site/);
+    expect(
+      (await textOf(client, call("keyring_request", { site: "https://reports.example.com" }))).text,
+    ).toMatch(/what you need/);
+  });
+
+  it("puts a card in front of the person and tells the bot only the name of what was saved", async () => {
+    const { client, call, prompts, service, keyring, bot } = await setup();
+    const ask = () =>
+      call("keyring_request", {
+        site: "https://www.reports.example.com/login",
+        reason: "To read the weekly report",
+        username: "sam@example.com",
+      });
+
+    const first = ask();
+    await waitFor(() => prompts().length === 1);
+    expect(prompts()[0]?.questions[0]?.keyRequest).toEqual({
+      botId: bot.id,
+      kind: "login",
+      origin: "https://www.reports.example.com",
+      name: "reports.example.com",
+      username: "sam@example.com",
+      reason: "To read the weekly report",
+    });
+    await service.respondToPrompt({
+      requestId: prompts()[0]?.requestId ?? "",
+      answers: { permission: ["Don't allow"] },
+    });
+    expect(await textOf(client, first)).toMatchObject({ success: false });
+
+    const second = ask();
+    await waitFor(() => prompts().length === 2);
+    // The card saves the key with the secret the person typed, shared with the asking bot.
+    await keyring.create({
+      name: "reports.example.com",
+      kind: "login",
+      origin: "https://www.reports.example.com",
+      username: "sam@example.com",
+      value: PASSWORD,
+      sharedWith: [bot.id],
+    });
+    await service.respondToPrompt({
+      requestId: prompts()[1]?.requestId ?? "",
+      answers: { permission: ["Allow once"] },
+    });
+    const saved = await textOf(client, second);
+    expect(saved.success).toBe(true);
+    expect(saved.text).toContain('keyName "reports.example.com"');
+    expect(JSON.stringify(client.responses)).not.toContain(PASSWORD);
+  });
+
+  it("says so when the saved key was not shared with the asking bot", async () => {
+    const { client, call, prompts, service, keyring } = await setup();
+    const asked = call("keyring_request", {
+      site: "https://reports.example.com",
+      reason: "To read the weekly report",
+    });
+    await waitFor(() => prompts().length === 1);
+    await keyring.create({
+      name: "reports",
+      kind: "login",
+      origin: "https://reports.example.com",
+      username: "sam",
+      value: PASSWORD,
+      sharedWith: [],
+    });
+    await service.respondToPrompt({
+      requestId: prompts()[0]?.requestId ?? "",
+      answers: { permission: ["Allow once"] },
+    });
+    expect((await textOf(client, asked)).text).toMatch(
+      /none for https:\/\/reports\.example\.com is shared/,
+    );
+  });
+});
+
 async function waitFor(condition: () => boolean, timeoutMs = 4_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (!condition()) {
