@@ -478,10 +478,16 @@ describe.sequential("AgentService", () => {
       ]),
     );
 
-    const starts = (await protocolMessages()).filter((message) => message.method === "turn/start");
-    const salesStart = starts.find((message) =>
-      String((message.params as Record<string, unknown>).cwd).endsWith("/sales-outbound"),
-    );
+    // The bot's earlier conversation is read before its first turn starts, so the turn may
+    // start a moment after the message shows in its chat.
+    const salesTurn = async () =>
+      (await protocolMessages()).find(
+        (message) =>
+          message.method === "turn/start" &&
+          String((message.params as Record<string, unknown>).cwd).endsWith("/sales-outbound"),
+      );
+    await waitFor(async () => (await salesTurn()) !== undefined);
+    const salesStart = await salesTurn();
     const salesInput = (salesStart?.params as Record<string, unknown> | undefined)?.input as
       | Array<Record<string, unknown>>
       | undefined;
