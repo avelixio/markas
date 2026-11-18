@@ -425,3 +425,137 @@
   color: var(--mk-text-secondary);
   font: 12px / 16px var(--mk-font-mono);
 }
+
+/* ----- providers on the Switchboard ----- */
+
+.mk-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.mk-providers__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mk-providers__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.mk-providers__heading .mk-section-title {
+  margin: 0;
+}
+
+.mk-providers__heading > small {
+  flex: 1;
+}
+
+.mk-providers__search {
+  width: min(260px, 100%);
+  margin-left: auto;
+}
+
+.mk-provider-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.mk-provider {
+  border: 1px solid var(--mk-border-subtle);
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-bg-surface);
+}
+
+.mk-provider.is-open {
+  border-color: var(--mk-accent-base);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.mk-provider__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 10px 14px;
+}
+
+.mk-provider__mark {
+  display: inline-grid;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: calc(var(--mk-radius-control) + 2px);
+  background: var(--mk-bg-raised);
+  color: var(--mk-text-secondary);
+}
+
+.mk-provider__text {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mk-provider__text small {
+  color: var(--mk-text-secondary);
+}
+
+.mk-chip.mk-chip--info {
+  background: var(--mk-info-soft);
+  color: var(--mk-info-base);
+}
+
+.mk-provider__sign-in {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--mk-accent-base);
+  border-top: 0;
+  border-radius: 0 0 var(--mk-radius-card) var(--mk-radius-card);
+  background: var(--mk-bg-surface);
+}
+
+.mk-provider__methods,
+.mk-provider__inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mk-provider__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.mk-provider__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: min(420px, 100%);
+}
+
+.mk-provider__field .mk-input,
+.mk-provider__inline .mk-input {
+  width: 100%;
+  max-width: 420px;
+}
+
+.mk-provider__note {
+  margin: 0;
+}
+
+fieldset.mk-provider__methods {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

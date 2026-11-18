@@ -27,6 +27,8 @@ export const LOGBOOK_ACTIONS = [
   "setup.saved",
   "engine.installed",
   "engine.located",
+  "provider.connected",
+  "provider.disconnected",
 ] as const;
 export type LogbookAction = (typeof LOGBOOK_ACTIONS)[number];
 

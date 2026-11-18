@@ -12,8 +12,7 @@ import type { KeySummary } from "../keyring/keyring-client";
 import { engineName } from "../setup/setup-client";
 import { Icon } from "../ui/Icon";
 import { AreaPage, Empty, Failed } from "./AreaPages";
-
-const describe = (error: unknown) => (error instanceof Error ? error.message : String(error));
+import { ProvidersPanel } from "./ProvidersPanel";
 
 const dateTime = (value: string | number) =>
   new Date(value).toLocaleString(language(), { dateStyle: "medium", timeStyle: "short" });
@@ -259,67 +258,6 @@ async function readSwitchboard(): Promise<SwitchboardData> {
   return { engines, logins: keys.filter((key) => key.kind === "login"), bots };
 }
 
-/** How to sign an engine in again: the command to copy, shown when the person asks for it. */
-function SignInHelp(props: { engine: SetupEngineStatus }) {
-  const [command, setCommand] = createSignal<string | null>(null);
-  const [problem, setProblem] = createSignal<string | null>(null);
-  const [copied, setCopied] = createSignal(false);
-
-  async function show(): Promise<void> {
-    setProblem(null);
-    try {
-      const found = await callHost<{ command: string }>("setup.signInCommand", props.engine.engine);
-      setCommand(found.command);
-    } catch (error) {
-      setProblem(describe(error));
-    }
-  }
-
-  async function copy(text: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    } catch {
-      // The command stays on screen to be selected by hand.
-      setCopied(false);
-    }
-  }
-
-  return (
-    <Show
-      when={command()}
-      fallback={
-        <>
-          <button type="button" class="mk-button mk-button--small" onClick={() => void show()}>
-            {t("switchboard.signIn")}
-          </button>
-          <Show when={problem()}>
-            {(message) => (
-              <span class="mk-form-error" role="alert">
-                {message()}
-              </span>
-            )}
-          </Show>
-        </>
-      }
-    >
-      {(text) => (
-        <span data-slot="command" class="mk-switchboard__command">
-          <small>{t("switchboard.signIn.how")}</small>
-          <code>{text()}</code>
-          <button
-            type="button"
-            class="mk-button mk-button--ghost mk-button--small"
-            onClick={() => void copy(text())}
-          >
-            {copied() ? t("switchboard.copied") : t("switchboard.copy")}
-          </button>
-        </span>
-      )}
-    </Show>
-  );
-}
-
 /** The engines and saved logins Markas keeps for the bots, and what state each is in. */
 export function SwitchboardPage() {
   const [data, { refetch }] = createResource(readSwitchboard);
@@ -344,44 +282,7 @@ export function SwitchboardPage() {
         <Match when={data()}>
           {(current) => (
             <>
-              <h2 class="mk-section-title">{t("switchboard.engines")}</h2>
-              <div class="mk-table-scroll">
-                <table data-slot="engines" class="mk-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">{t("switchboard.column.engine")}</th>
-                      <th scope="col">{t("switchboard.column.state")}</th>
-                      <th scope="col">{t("switchboard.column.version")}</th>
-                      <th scope="col">{t("switchboard.column.account")}</th>
-                      <th scope="col">{t("switchboard.column.next")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={current().engines}>
-                      {(engine) => (
-                        <tr>
-                          <th scope="row">{engineName(engine.engine)}</th>
-                          <td>
-                            <StateChip state={engine.state} />
-                          </td>
-                          <td class="mk-mono">{engine.version ?? t("switchboard.none")}</td>
-                          <td>{engine.email ?? t("switchboard.none")}</td>
-                          <td>
-                            <Switch fallback={t("switchboard.next.nothing")}>
-                              <Match when={engine.state === "not-signed-in"}>
-                                <SignInHelp engine={engine} />
-                              </Match>
-                              <Match when={engine.state !== "signed-in"}>
-                                {engine.message ?? t("switchboard.next.setup")}
-                              </Match>
-                            </Switch>
-                          </td>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
+              <ProvidersPanel engines={current().engines} onEnginesChanged={() => void refetch()} />
 
               <h2 class="mk-section-title">
                 {t("switchboard.logins")} <span class="mk-chip">{t("common.preview")}</span>

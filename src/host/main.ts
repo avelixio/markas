@@ -24,6 +24,8 @@ import { LogbookStore } from "../backend/logbook/logbook-store";
 import { MailboxStore } from "../backend/mailbox-store";
 import { findCommandFilter } from "../backend/optimizer/command-filter";
 import { OptimizerStore } from "../backend/optimizer/optimizer-store";
+import { LocalModelServers } from "../backend/providers/local-models";
+import { OpenCodeConnect } from "../backend/providers/opencode-connect";
 import { RoomsStore } from "../backend/rooms/rooms-store";
 import { RoundsStore } from "../backend/rounds/rounds-store";
 import { RoundsScheduler } from "../backend/rounds/scheduler";
@@ -54,6 +56,7 @@ import {
 import { createOptimizerMethods } from "./optimizer-methods";
 import { requireString } from "./parsers";
 import { type HostPaths, resolveHostPaths, resolvePort } from "./paths";
+import { createProviderMethods } from "./provider-methods";
 import { createRoomsMethods } from "./rooms-methods";
 import { createRoundsMethods, followRounds } from "./rounds-methods";
 import { resolveLibraryRoot, resolveUiRoot } from "./runtime";
@@ -142,6 +145,22 @@ export async function startHost(
   for (const [engine, path] of Object.entries(enginePaths)) {
     preferCliPath(engine as AgentProviderId, path);
   }
+  // Model servers on this computer the person connected, handed to Markas's own OpenCode runs.
+  const localModels = new LocalModelServers(paths.root);
+  await localModels.initialize();
+  const createClient: AgentClientFactory =
+    options.createClient ??
+    ((provider, timeoutMs) =>
+      createInstalledCliClient(provider, timeoutMs, {
+        openCodeProviders: () => localModels.openCodeProviders(),
+      }));
+  const openCodeConnect = new OpenCodeConnect({
+    executable: async () => (await resolveOpenCodeCli()).executable,
+    settings: () => {
+      const provider = localModels.openCodeProviders();
+      return Object.keys(provider).length > 0 ? { provider } : {};
+    },
+  });
   const service = new AgentService(
     store,
     mailbox,
@@ -149,7 +168,7 @@ export async function startHost(
     null,
     REQUEST_TIMEOUT_MS,
     setup.preferredProvider ?? "codex",
-    options.createClient,
+    createClient,
   );
   service.useOptimizer({
     settings: () => optimizer.settings(),
@@ -186,9 +205,7 @@ export async function startHost(
   const dispatchRoot = join(paths.root, "dispatch");
   await mkdir(dispatchRoot, { recursive: true, mode: 0o700 });
   const dispatch = new DispatchService({
-    createClient: async (provider) =>
-      (await (options.createClient ?? createInstalledCliClient)(provider, REQUEST_TIMEOUT_MS))
-        .client,
+    createClient: async (provider) => (await createClient(provider, REQUEST_TIMEOUT_MS)).client,
     engines: () => {
       const ready = (service.getStatus().providers ?? [])
         .filter((provider) => provider.state === "available")
@@ -396,6 +413,12 @@ export async function startHost(
           sharedRoot: store.sharedRoot,
           open: openWithOperatingSystem,
         }),
+        ...createProviderMethods({
+          local: localModels,
+          openCode: openCodeConnect,
+          refreshModels: () => service.refreshModels(),
+          logbook,
+        }),
         ...createFuelMethods({
           status: () => service.getStatus(),
           usage: () => service.getUsage(),
@@ -461,6 +484,7 @@ export async function startHost(
       clearInterval(trashTimer);
       engineSetup.stop();
       await dispatch.stop();
+      await openCodeConnect.stop();
       await optimizer.flush().catch(() => undefined);
       events.close();
       await server.stop(true);

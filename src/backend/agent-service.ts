@@ -273,14 +273,27 @@ export type AgentClientFactory = (
 
 type EngineCliInfo = CodexCliInfo | ClaudeCliInfo | OpenCodeCliInfo;
 
-export const createInstalledCliClient: AgentClientFactory = async (provider, requestTimeoutMs) => {
+/** What the host adds to the engines it starts. */
+export interface EngineExtras {
+  /** Providers for Markas's own OpenCode processes, such as connected local model servers. */
+  openCodeProviders?: () => Record<string, unknown>;
+}
+
+export const createInstalledCliClient = async (
+  provider: AgentProvider,
+  requestTimeoutMs: number,
+  extras: EngineExtras = {},
+): ReturnType<AgentClientFactory> => {
   if (provider === "codex") {
     const cli = await resolveCodexCli();
     return { client: new CodexAppServerClient(cli.executable, requestTimeoutMs), cli };
   }
   if (provider === "opencode") {
     const cli = await resolveOpenCodeCli();
-    return { client: new OpenCodeAgentClient(cli), cli };
+    return {
+      client: new OpenCodeAgentClient(cli, { providers: extras.openCodeProviders }),
+      cli,
+    };
   }
   const cli = await resolveClaudeCli();
   return { client: new ClaudeAgentClient(cli), cli };
@@ -1760,14 +1773,14 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     }
   }
 
-  async #refreshModelCatalog(): Promise<void> {
+  async #refreshModelCatalog(fresh = false): Promise<void> {
     const discovered: AgentModelOption[] = [];
     const openCodeModels: AgentModelOption[] = [];
     for (const client of this.#clients.values()) {
       try {
         const response = await client.request<ModelListResponse>(
           "model/list",
-          { limit: 100, includeHidden: false },
+          { limit: 100, includeHidden: false, ...(fresh ? { fresh: true } : {}) },
           client.provider === "opencode" ? 30_000 : 5_000,
         );
         if (client.provider === "opencode") {
@@ -2638,6 +2651,17 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const usage = normalizeAccountUsage(rateLimits);
     this.#emit({ type: "usage-changed", usage: structuredClone(usage) });
     return structuredClone(usage);
+  }
+
+  /**
+   * Looks at the engines' models again, after the person connected or disconnected a provider,
+   * and tells the window. OpenCode is looked for again too: it is ready once it has a model.
+   */
+  async refreshModels(): Promise<AgentModelOption[]> {
+    await this.checkProvider("opencode").catch(() => undefined);
+    await this.#refreshModelCatalog(true);
+    this.#setStatus({});
+    return this.listModels();
   }
 
   #setStatus(patch: Partial<AgentStatus>): void {

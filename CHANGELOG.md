@@ -4,6 +4,8 @@ What changed in Markas, newest first.
 
 ## Unreleased
 
+- The Switchboard shows what Markas found on this computer, marked Detected, with one Connect for each: the engines, model servers such as LM Studio and Ollama, and every model provider OpenCode can use. Signing in happens in the browser, without a terminal.
+- An engine that is not installed can be installed from the Switchboard.
 - A tab the person took over offers to save a login in the Keyring too; the bot is then told in the chat, since it is not waiting on the tab.
 - A login saved from a hand-off gets a name the Keyring accepts, made from the website.
 - Bots are told not to end their turn asking the person to sign in, and to hand the tab over instead.

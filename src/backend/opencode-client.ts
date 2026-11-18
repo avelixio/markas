@@ -141,6 +141,11 @@ export interface OpenCodeClientOptions {
   /** Runs `opencode` with these arguments and returns what it printed. */
   runCli?: (args: string[]) => Promise<string>;
   quietTurnMs?: number;
+  /**
+   * Providers Markas adds for its own OpenCode processes, such as a model server on this
+   * computer the person connected. They are never written into the person's OpenCode settings.
+   */
+  providers?: () => Record<string, unknown>;
 }
 
 /**
@@ -157,6 +162,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
   readonly #connect: AcpConnector;
   readonly #runCli: (args: string[]) => Promise<string>;
   readonly #quietTurnMs: number;
+  readonly #providers: () => Record<string, unknown>;
   readonly #threads = new Map<string, ThreadRuntime>();
   readonly #byKey = new Map<string, ThreadRuntime>();
   /** How each known conversation is set up, so one whose process ended can be started again. */
@@ -171,7 +177,9 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     super();
     this.#cli = cli;
     this.#connect = options.connect ?? ((start) => new StdioAcpConnection(start));
-    this.#runCli = options.runCli ?? ((args) => runOpenCode(cli.executable, args));
+    this.#providers = options.providers ?? (() => ({}));
+    this.#runCli =
+      options.runCli ?? ((args) => runOpenCode(cli.executable, args, this.#providers()));
     this.#quietTurnMs = options.quietTurnMs ?? QUIET_TURN_MS;
     this.#tools = new LocalToolServer((key, namespace, tool, args) =>
       this.#callTool(key, namespace, tool, args),
@@ -216,13 +224,18 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
         return { rateLimits: null, rateLimitsByLimitId: null } as T;
       case "model/list":
         return {
-          data: (await this.#listModels(false)).map((model) => ({
-            model: `opencode:${model.name}`,
-            displayName: model.label,
-            supportedReasoningEfforts: model.variants
-              .filter((variant) => (AGENT_REASONING_EFFORTS as readonly string[]).includes(variant))
-              .map((reasoningEffort) => ({ reasoningEffort })),
-          })),
+          // Asked fresh after the person connected a provider; otherwise a recent list will do.
+          data: (await this.#listModels(isRecord(params) && params.fresh === true)).map(
+            (model) => ({
+              model: `opencode:${model.name}`,
+              displayName: model.label,
+              supportedReasoningEfforts: model.variants
+                .filter((variant) =>
+                  (AGENT_REASONING_EFFORTS as readonly string[]).includes(variant),
+                )
+                .map((reasoningEffort) => ({ reasoningEffort })),
+            }),
+          ),
         } as T;
       case "plugin/list":
         return { marketplaces: [] } as T;
@@ -327,6 +340,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
                 { url: endpoint.urlFor(namespace), token: endpoint.token },
               ]),
             ),
+            providers: this.#providers(),
           }),
         ),
         OPENCODE_DISABLE_AUTOUPDATE: "1",
@@ -1016,7 +1030,11 @@ export function parseOpenCodeModels(printed: string): OpenCodeModel[] {
   return models;
 }
 
-function runOpenCode(executable: string, args: string[]): Promise<string> {
+function runOpenCode(
+  executable: string,
+  args: string[],
+  providers: Record<string, unknown> = {},
+): Promise<string> {
   const viaShell = process.platform === "win32";
   return new Promise((resolve, reject) => {
     execFile(
@@ -1027,7 +1045,13 @@ function runOpenCode(executable: string, args: string[]): Promise<string> {
         maxBuffer: 32 * 1024 * 1024,
         shell: viaShell,
         windowsHide: true,
-        env: { ...process.env, OPENCODE_DISABLE_AUTOUPDATE: "1" },
+        env: {
+          ...process.env,
+          OPENCODE_DISABLE_AUTOUPDATE: "1",
+          ...(Object.keys(providers).length > 0
+            ? { OPENCODE_CONFIG_CONTENT: JSON.stringify({ provider: providers }) }
+            : {}),
+        },
       },
       (error, stdout) => (error ? reject(error) : resolve(stdout)),
     );

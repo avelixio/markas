@@ -72,6 +72,8 @@ export function sessionSettings(input: {
   level: AccessLevel;
   instructionsFile: string;
   tools: Record<string, ToolEndpoint>;
+  /** Providers Markas adds, such as a model server on this computer the person connected. */
+  providers?: Record<string, unknown>;
 }): Record<string, unknown> {
   const permission = permissionRules(input.level);
   return {
@@ -97,6 +99,9 @@ export function sessionSettings(input: {
         },
       ]),
     ),
+    ...(input.providers && Object.keys(input.providers).length > 0
+      ? { provider: input.providers }
+      : {}),
     permission,
     // The rules of the agent itself are read after everything else, so they are repeated here.
     agent: { build: { permission } },

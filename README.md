@@ -35,7 +35,7 @@ Its narration is read by [Kitten TTS](https://github.com/KittenML/KittenTTS) by 
 - Let bots message each other and reply.
 - A browser for bots, held to the sites each bot is allowed, that hands over to you for a step only you can do.
 - Keep logins in the Keyring: each key has its own name and one exact website, so two sites under one company domain never share a login.
-- Switchboard (Preview): see which engines are installed and signed in.
+- Switchboard (Preview): see which engines and model services were found on this computer, and connect each one with one button, with no terminal.
 - OpenCode as an engine (new, less tried than the other two): a bot can run on any model your OpenCode has.
 - Optimizer: smaller conversations and a count of the tokens saved.
 - Logbook: a record of what was done, by whom, and how it ended.
@@ -149,7 +149,6 @@ bun run package:desktop
 
 The app is then in `dist/desktop-release/` (on a Mac with Apple silicon, `dist/desktop-release/mac-arm64/Markas.app`).
 
-On a computer managed by your employer or school, check that running your own tools is allowed before you do this.
 
 ## Privacy and safety
 

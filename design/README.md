@@ -70,6 +70,7 @@ The screens follow the seven main user flows, plus the vault, gate, routines and
 | 13 | Logbook |
 | 14 | Rounds and run history |
 | 15 | Switchboard and login health |
+| 15c | Providers: what was found on this computer, then Connect |
 | 16 | Notifications and the undo toast |
 | 17 | Status system: every bot state and its action |
 | 18 | Needs an answer, needs sign-in |
