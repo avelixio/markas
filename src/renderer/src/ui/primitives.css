@@ -488,3 +488,128 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
 }
+
+/* ----- motion -----
+ * One rhythm for every primitive (see 30b Keyring interactions): state changes ease over
+ * 120 ms, dialogs arrive in 180 ms and leave in 120 ms, and messages fade up as they appear.
+ * Reduced motion shows every end state at once. */
+
+.mk-button,
+.mk-icon-button {
+  transition:
+    background-color var(--mk-duration-fast) var(--mk-ease-out),
+    border-color var(--mk-duration-fast) var(--mk-ease-out),
+    color var(--mk-duration-fast) var(--mk-ease-out),
+    opacity var(--mk-duration-fast) var(--mk-ease-out),
+    transform var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+.mk-button:active:not(:disabled),
+.mk-icon-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.mk-input {
+  transition:
+    border-color var(--mk-duration-fast) var(--mk-ease-out),
+    background-color var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+.mk-segmented__item {
+  transition:
+    background-color var(--mk-duration-fast) var(--mk-ease-out),
+    color var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+.mk-scrim {
+  animation: mk-fade-in 160ms var(--mk-ease-out) both;
+}
+
+.mk-dialog {
+  animation: mk-dialog-in var(--mk-duration-base) var(--mk-ease-out) both;
+}
+
+.mk-scrim.is-leaving {
+  animation: mk-fade-out var(--mk-duration-fast) var(--mk-ease-in) both;
+}
+
+.mk-scrim.is-leaving .mk-dialog {
+  animation: mk-dialog-out var(--mk-duration-fast) var(--mk-ease-in) both;
+}
+
+.mk-form-error,
+.mk-form-ok,
+.mk-notice {
+  animation: mk-rise-in 140ms var(--mk-ease-out) both;
+}
+
+.mk-spin {
+  animation: mk-spin 900ms linear infinite;
+}
+
+@keyframes mk-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes mk-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes mk-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@keyframes mk-dialog-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes mk-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes mk-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-button,
+  .mk-icon-button,
+  .mk-input,
+  .mk-segmented__item {
+    transition: none;
+  }
+
+  .mk-button:active:not(:disabled),
+  .mk-icon-button:active:not(:disabled) {
+    transform: none;
+  }
+
+  .mk-scrim,
+  .mk-dialog,
+  .mk-scrim.is-leaving,
+  .mk-scrim.is-leaving .mk-dialog,
+  .mk-form-error,
+  .mk-form-ok,
+  .mk-notice {
+    animation: none;
+  }
+
+  .mk-spin {
+    animation-duration: 2.4s;
+  }
+}

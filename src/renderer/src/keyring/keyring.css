@@ -292,3 +292,115 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ----- motion (30b Keyring interactions) ----- */
+
+.mk-key-dialog__chevron {
+  transition: transform var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+.mk-key-dialog__chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.mk-key-dialog__more-body {
+  animation: mk-key-reveal 160ms var(--mk-ease-out) both;
+}
+
+.mk-share {
+  transition:
+    border-color var(--mk-duration-fast) var(--mk-ease-out),
+    background-color var(--mk-duration-fast) var(--mk-ease-out),
+    transform var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+.mk-share:active {
+  transform: scale(0.98);
+}
+
+.mk-key-dialog__peek {
+  transition: color var(--mk-duration-fast) var(--mk-ease-out);
+}
+
+/* Two classes, so this wins over the shared rise-in of .mk-form-ok wherever that is loaded. */
+.mk-form-ok.mk-key-saved {
+  animation: mk-key-saved-in var(--mk-duration-base) var(--mk-ease-out) both;
+}
+
+.mk-form-ok.mk-key-saved.is-leaving {
+  animation: mk-fade-out var(--mk-duration-fast) var(--mk-ease-in) both;
+}
+
+.mk-table tbody tr.is-fresh > * {
+  animation: mk-key-fresh 1600ms var(--mk-ease-in) both;
+}
+
+.mk-revealed {
+  animation: mk-rise-in 140ms var(--mk-ease-out) both;
+}
+
+.mk-key-request {
+  animation: mk-key-request-in 200ms var(--mk-ease-out) both;
+}
+
+.mk-key-request--done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--mk-accent-text);
+  font-weight: 600;
+  animation: mk-fade-in var(--mk-duration-fast) var(--mk-ease-out) both;
+}
+
+@keyframes mk-key-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes mk-key-saved-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes mk-key-fresh {
+  from {
+    background-color: var(--mk-accent-soft);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes mk-key-request-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-key-dialog__chevron,
+  .mk-share,
+  .mk-key-dialog__peek {
+    transition: none;
+  }
+
+  .mk-share:active {
+    transform: none;
+  }
+
+  .mk-key-dialog__more-body,
+  .mk-form-ok.mk-key-saved,
+  .mk-form-ok.mk-key-saved.is-leaving,
+  .mk-table tbody tr.is-fresh > *,
+  .mk-revealed,
+  .mk-key-request,
+  .mk-key-request--done {
+    animation: none;
+  }
+}

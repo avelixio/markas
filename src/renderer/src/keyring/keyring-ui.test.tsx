@@ -132,6 +132,8 @@ describe("KeyringPage", () => {
       value: "pw-12345",
     });
     expect(await screen.findByText("admin-read")).toBeInTheDocument();
+    // The new row is washed for a moment, so the eye finds where the key went.
+    expect(screen.getByText("admin-read").closest("tr")).toHaveClass("is-fresh");
   });
 
   it("keeps the form open and shows the host's reason when a key is refused", async () => {
@@ -193,6 +195,16 @@ describe("KeyringPage", () => {
     expect(calls.some((call) => call.method === "keyring.create")).toBe(false);
     fireEvent.input(website, { target: { value: "https://app.example.com" } });
     expect(website).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("closes the dialog with a short exit, after which it is gone", async () => {
+    render(() => <KeyringPage />);
+    await screen.findByText("No keys yet");
+    fireEvent.click(screen.getAllByRole("button", { name: "Add key" })[0] as HTMLElement);
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(dialog.closest(".mk-scrim")).toHaveClass("is-leaving");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("keeps the two-step code and the fill rule folded until asked for", async () => {

@@ -4,6 +4,7 @@ import { AgentAvatar } from "../components/AgentAvatar";
 import { language, t, tCount } from "../i18n";
 import { Icon } from "../ui/Icon";
 import type { IconName } from "../ui/icons";
+import { afterExit } from "../ui/motion";
 import { KeyDialog } from "./KeyDialog";
 import { type KeyDraft, type KeyKind, type KeySummary, keyringClient } from "./keyring-client";
 import "./keyring.css";
@@ -32,11 +33,16 @@ export function KeyringPage() {
   const [revealed, setRevealed] = createSignal<Revealed | null>(null);
   const [actionError, setActionError] = createSignal<string | null>(null);
   const [saved, setSaved] = createSignal<string | null>(null);
+  const [savedLeaving, setSavedLeaving] = createSignal(false);
+  // The row of a key just saved gets a short wash, so the eye finds where it went.
+  const [freshKeyId, setFreshKeyId] = createSignal<string | null>(null);
+  let freshTimer: ReturnType<typeof setTimeout> | undefined;
   let revealTimer: ReturnType<typeof setTimeout> | undefined;
   let savedTimer: ReturnType<typeof setTimeout> | undefined;
   onCleanup(() => {
     clearTimeout(revealTimer);
     clearTimeout(savedTimer);
+    clearTimeout(freshTimer);
   });
 
   const botName = (id: string) => bots()?.find((bot) => bot.id === id);
@@ -50,9 +56,14 @@ export function KeyringPage() {
 
   const save = async (draft: KeyDraft) => {
     const current = dialog();
-    if (current?.type === "edit") await keyringClient.update(current.key.id, draft);
-    else await keyringClient.create(draft);
+    const result =
+      current?.type === "edit"
+        ? await keyringClient.update(current.key.id, draft)
+        : await keyringClient.create(draft);
     setDialog(null);
+    setFreshKeyId(result?.id ?? (current?.type === "edit" ? current.key.id : null));
+    clearTimeout(freshTimer);
+    freshTimer = setTimeout(() => setFreshKeyId(null), 1700);
     // Saying who can use it now is the check that the key was shared as meant.
     const names = draft.sharedWith.map((id) => botName(id)?.name ?? id);
     setSaved(
@@ -60,8 +71,16 @@ export function KeyringPage() {
         ? t("keyring.saved.shared", { name: draft.name, bots: names.join(", ") })
         : t("keyring.saved.unshared", { name: draft.name }),
     );
+    setSavedLeaving(false);
     clearTimeout(savedTimer);
-    savedTimer = setTimeout(() => setSaved(null), 8000);
+    savedTimer = setTimeout(
+      () =>
+        afterExit(
+          () => setSavedLeaving(true),
+          () => setSaved(null),
+        ),
+      8000,
+    );
     await refetch();
   };
 
@@ -115,7 +134,12 @@ export function KeyringPage() {
       <div data-slot="body" class="mk-page__body">
         <Show when={saved()}>
           {(message) => (
-            <p data-slot="saved" class="mk-form-ok" role="status">
+            <p
+              data-slot="saved"
+              class="mk-form-ok mk-key-saved"
+              classList={{ "is-leaving": savedLeaving() }}
+              role="status"
+            >
               <Icon name="check" size={12} />
               {message()}
             </p>
@@ -182,7 +206,7 @@ export function KeyringPage() {
                 <tbody>
                   <For each={keys()}>
                     {(key) => (
-                      <tr data-key={key.name}>
+                      <tr data-key={key.name} classList={{ "is-fresh": freshKeyId() === key.id }}>
                         <th scope="row">
                           <span class="mk-key-name">
                             <Icon name={KIND_ICONS[key.kind]} size={14} />

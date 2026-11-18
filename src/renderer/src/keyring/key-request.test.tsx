@@ -55,6 +55,10 @@ describe("a bot asking for a key", () => {
       target: { value: "not-a-real-password" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save and let Atlas use it" }));
+    // The check shows first, so the person sees the key landed, then the bot is answered.
+    expect(
+      await screen.findByText("Saved. Atlas can use reports.example.com now."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(onAnswer).toHaveBeenCalledWith(true));
     expect(api.saved).toEqual([
       {

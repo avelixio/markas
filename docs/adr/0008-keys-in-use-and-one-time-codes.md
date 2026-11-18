@@ -153,6 +153,9 @@ Changed on 2026-11-19 after a UI UX Pro Max audit, because adding a key showed n
 - A key that no bot can use is still saved, but the dialog warns once the key has a site, and the list offers Share for it.
 - After saving, the Keyring says which bots can use the key now.
 - The kinds are named "Website login", "API token" and "Environment variable", and the fill rules "Automatically", "Ask me first" and "I sign in myself".
+- Movement follows the frame 30b Keyring interactions and the motion tokens in `ui/tokens.css`: arrivals take 180 ms and slow down, exits take 120 ms and speed up, and only transform and opacity animate.
+A closing dialog plays its exit before it goes (`ui/motion.ts`), a saved key's row is washed in mint for 1.6 s, and a key request card shows its check for 600 ms before the bot is answered.
+Nothing waits on an animation event, and with reduced motion every end state shows at once.
 
 ## Consequences
 

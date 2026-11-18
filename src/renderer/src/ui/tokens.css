@@ -45,6 +45,12 @@
   --mk-radius-full: 999px;
   --mk-font-ui: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mk-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+  /* Motion: arrivals slow down, exits speed up and are shorter; only transform and opacity move. */
+  --mk-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mk-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --mk-duration-fast: 120ms;
+  --mk-duration-base: 180ms;
+  --mk-duration-slow: 240ms;
 }
 
 :root[data-theme="light"] {

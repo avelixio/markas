@@ -3,6 +3,7 @@ import type { BotSummary } from "../../../shared/ipc";
 import { AgentAvatar } from "../components/AgentAvatar";
 import { t } from "../i18n";
 import { Icon } from "../ui/Icon";
+import { afterExit } from "../ui/motion";
 import { keyNameFor, uniqueKeyName } from "./key-name";
 import {
   FILL_POLICIES,
@@ -84,7 +85,13 @@ export function KeyDialog(props: KeyDialogProps) {
       Boolean(existing) ||
       Boolean((kind() === "variable" ? variable() : origin()).trim()));
   const [saving, setSaving] = createSignal(false);
+  const [leaving, setLeaving] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
+  /** Closes with a short exit, so the dialog goes back the way it came. */
+  const close = () => {
+    if (leaving()) return;
+    afterExit(() => setLeaving(true), props.onClose);
+  };
   const fields: Partial<Record<Field, HTMLInputElement>> = {};
   let sharingSection: HTMLFieldSetElement | undefined;
 
@@ -124,7 +131,7 @@ export function KeyDialog(props: KeyDialogProps) {
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === "Escape" && !saving()) props.onClose();
+    if (event.key === "Escape" && !saving()) close();
   };
   onMount(() => {
     window.addEventListener("keydown", onKeyDown);
@@ -209,7 +216,7 @@ export function KeyDialog(props: KeyDialogProps) {
     });
 
   return (
-    <div data-component="KeyDialog" class="mk-scrim">
+    <div data-component="KeyDialog" class="mk-scrim" classList={{ "is-leaving": leaving() }}>
       <form
         class="mk-dialog mk-key-dialog"
         role="dialog"
@@ -234,7 +241,7 @@ export function KeyDialog(props: KeyDialogProps) {
             type="button"
             class="mk-icon-button"
             aria-label={t("common.close")}
-            onClick={props.onClose}
+            onClick={close}
           >
             <Icon name="close" />
           </button>
@@ -415,7 +422,11 @@ export function KeyDialog(props: KeyDialogProps) {
               aria-controls="key-more"
               onClick={() => setMoreOpen((current) => !current)}
             >
-              <Icon name={moreOpen() ? "chevronDown" : "chevronRight"} size={14} />
+              <Icon
+                name="chevronRight"
+                size={14}
+                class={`mk-key-dialog__chevron${moreOpen() ? " is-open" : ""}`}
+              />
               <strong>{t("keyring.form.more")}</strong>
               <Show when={!moreOpen()}>
                 <span>{moreSummary()}</span>
@@ -500,11 +511,16 @@ export function KeyDialog(props: KeyDialogProps) {
         </Show>
 
         <footer data-slot="actions" class="mk-dialog__actions">
-          <button type="button" class="mk-button mk-button--ghost" onClick={props.onClose}>
+          <button type="button" class="mk-button mk-button--ghost" onClick={close}>
             {t("common.cancel")}
           </button>
-          <button type="submit" class="mk-button mk-button--primary" disabled={saving()}>
-            <Icon name="lock" />
+          <button
+            type="submit"
+            class="mk-button mk-button--primary"
+            disabled={saving()}
+            aria-busy={saving()}
+          >
+            <Icon name={saving() ? "refresh" : "lock"} class={saving() ? "mk-spin" : undefined} />
             {saving() ? t("keyring.form.saving") : t("keyring.form.save")}
           </button>
         </footer>
