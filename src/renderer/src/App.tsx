@@ -39,6 +39,7 @@ import {
   isDefaultBotName,
   ONBOARDING_TOPICS,
 } from "./data";
+import { FeedbackDialog } from "./feedback/FeedbackDialog";
 import { type MessageKey, t } from "./i18n";
 import {
   type CrewNotice,
@@ -124,6 +125,7 @@ export function App() {
     sessions: [],
   });
   const [agentPickerOpen, setAgentPickerOpen] = createSignal(false);
+  const [feedbackOpen, setFeedbackOpen] = createSignal(false);
   const [creatingAgent, setCreatingAgent] = createSignal(false);
   const [settingsRequest, setSettingsRequest] = createSignal<{
     botId: string;
@@ -764,6 +766,7 @@ export function App() {
             onUpdateAction={runUpdateAction}
             onOpenExternal={(destination) => window.markas.openExternal(destination)}
             onOpenEngines={() => requestOpenArea("switchboard")}
+            onSendFeedback={() => setFeedbackOpen(true)}
             onCollapse={() => setSidebarCollapsed(true)}
           />
           <PanelResizer
@@ -812,6 +815,9 @@ export function App() {
           onOpenAgentSetup={async () => requestOpenArea("switchboard")}
           onStop={stopActiveTurn}
         />
+        <Show when={feedbackOpen()}>
+          <FeedbackDialog onClose={() => setFeedbackOpen(false)} />
+        </Show>
         <Show when={deletedBot()} keyed>
           {(gone) => (
             <UndoNotice

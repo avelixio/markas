@@ -1,5 +1,6 @@
 import { createResource, createSignal, For, type JSX, Match, Show, Switch } from "solid-js";
 import type { AgentReasoningEffort, AppInfo, ExportResult } from "../../../shared/ipc";
+import { FeedbackDialog } from "../feedback/FeedbackDialog";
 import { callHost } from "../host-client";
 import { LANGUAGES, type Language, language, type MessageKey, setLanguage, t } from "../i18n";
 import {
@@ -83,6 +84,7 @@ export function SettingsPage(props: {
   const [problem, setProblem] = createSignal<string | null>(null);
   const [saving, setSaving] = createSignal(false);
   const [exported, setExported] = createSignal<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = createSignal(false);
 
   const readyEngines = () =>
     (data()?.engines ?? []).filter((engine) => engine.state === "ready").map((engine) => engine.id);
@@ -302,6 +304,21 @@ export function SettingsPage(props: {
                   </button>
                 </Row>
               </Section>
+              <Section title={t("appSettings.feedback")} lead={t("appSettings.feedback.lead")}>
+                <Row label={t("appSettings.feedback.row")} hint={t("appSettings.feedback.hint")}>
+                  <button
+                    type="button"
+                    class="mk-button mk-button--small"
+                    onClick={() => setFeedbackOpen(true)}
+                  >
+                    <Icon name="chat" size={12} />
+                    {t("feedback.open")}
+                  </button>
+                </Row>
+              </Section>
+              <Show when={feedbackOpen()}>
+                <FeedbackDialog onClose={() => setFeedbackOpen(false)} />
+              </Show>
               <DeletedBots client={props.deletedBots} />
               <p class="mk-quiet">
                 <Icon name="info" size={12} /> {t("appSettings.note")}

@@ -40,6 +40,7 @@ import { AgentInitializationGate } from "./agent-initialization";
 import { createBrowserMethods, createBrowserService } from "./browser-methods";
 import { createDispatchMethods } from "./dispatch-methods";
 import { EventHub } from "./event-hub";
+import { createFeedbackMethods } from "./feedback";
 import { createFilesMethods } from "./files-methods";
 import { createFuelMethods } from "./fuel-methods";
 import { createHostHandler } from "./handler";
@@ -349,6 +350,11 @@ export async function startHost(
     methods: withLogbook(
       {
         ...createHostMethods(context),
+        ...createFeedbackMethods({
+          version: APP_VERSION,
+          providers: async () => (await service.getStatus()).providers ?? [],
+          language: async () => setupNow.language ?? "en",
+        }),
         ...createBrowserMethods(browser),
         ...guardKeyring(createKeyringMethods(keyring), keyringProblem),
         ...createSetupMethods({

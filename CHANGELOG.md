@@ -2,6 +2,10 @@
 
 What changed in Markas, newest first.
 
+## Unreleased
+
+- Send feedback, from the account menu or Settings: report a bug or share an idea as a GitHub issue, opened with your own GitHub account or sent directly without one. You see every detail about your computer that goes with it, and can leave them out.
+
 ## 0.1.2 - 2026-11-18
 
 Found by testing 0.1.1 on a real computer.

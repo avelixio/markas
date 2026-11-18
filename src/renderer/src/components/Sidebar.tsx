@@ -9,6 +9,7 @@ import type {
 } from "../../../shared/ipc";
 import type { BotProfile } from "../data";
 import { t, tCount } from "../i18n";
+import { Icon } from "../ui/Icon";
 import { AgentAvatar } from "./AgentAvatar";
 
 interface SidebarProps {
@@ -26,6 +27,8 @@ interface SidebarProps {
   onRefreshUsage: () => Promise<AccountUsage>;
   onUpdateAction: () => Promise<void>;
   onOpenExternal: (destination: ExternalDestination) => Promise<void>;
+  /** Opens Send feedback; without it the menu offers no feedback item. */
+  onSendFeedback?: () => void;
   /** Opens Switchboard, where engines are installed and signed in. */
   onOpenEngines: () => void;
   onCollapse: () => void;
@@ -505,6 +508,22 @@ export function Sidebar(props: SidebarProps) {
               <PermissionsIcon />
               <span>{t("sidebar.menu.engines")}</span>
             </button>
+            <Show when={props.onSendFeedback}>
+              {(open) => (
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="account-menu-row"
+                  onClick={() => {
+                    setAccountMenuOpen(false);
+                    open()();
+                  }}
+                >
+                  <Icon name="chat" size={14} />
+                  <span>{t("feedback.open")}</span>
+                </button>
+              )}
+            </Show>
             <Show when={popoverError()}>
               {(message) => <p class="account-popover-error">{message()}</p>}
             </Show>

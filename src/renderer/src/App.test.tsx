@@ -341,8 +341,8 @@ describe("Markas connected desktop shell", () => {
     expect(screen.queryByRole("menuitem", { name: "Export data" })).not.toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Export diagnostics" })).not.toBeInTheDocument();
 
-    // Markas has no hosted feedback or message page, so the menu offers neither.
-    expect(screen.queryByRole("menuitem", { name: "Send feedback" })).not.toBeInTheDocument();
+    // Feedback opens Send feedback; there is no hosted message page.
+    expect(screen.getByRole("menuitem", { name: "Send feedback" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "Message" })).not.toBeInTheDocument();
   });
 
