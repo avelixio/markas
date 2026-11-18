@@ -107,6 +107,35 @@ describe("AgentService with an injected client", () => {
     await second.created.stop();
   });
 
+  it("ends the engine's session for a chat when its bot is deleted", async () => {
+    const client = new FakeAgentClient({ autoReply: "Done." });
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    await store.initialize();
+    await mailbox.initialize();
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "codex",
+      fakeClientFactory({ codex: client }),
+    );
+    const events: AgentEvent[] = [];
+    service.on("event", (event) => events.push(event));
+    await service.initialize();
+    const bot = await service.createBot();
+    await service.sendMessage({ botId: bot.id, text: "Hello" });
+    await waitFor(() => events.some((event) => event.type === "turn-completed"));
+    const threadId = store.list().find((entry) => entry.id === bot.id)?.threadId;
+    expect(threadId).toBeTruthy();
+
+    await service.deleteBot(bot.id);
+
+    expect(client.closedThreads).toEqual([threadId]);
+  });
+
   it("opens a bot's chat even when its engine is not on this computer, and says how that engine stands", async () => {
     const store = new BotStore(join(root, "data"), join(root, "data"));
     const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);

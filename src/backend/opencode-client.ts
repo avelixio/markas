@@ -439,6 +439,15 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     });
   }
 
+  async closeThread(threadId: string): Promise<void> {
+    // Forgotten first, so a process still being opened is not started again later.
+    this.#configs.delete(threadId);
+    const opening = this.#opening.get(threadId);
+    if (opening) await opening.catch(() => undefined);
+    const runtime = this.#threads.get(threadId);
+    if (runtime) await this.#close(runtime);
+  }
+
   async #close(runtime: ThreadRuntime): Promise<void> {
     if (runtime.closed) return;
     runtime.closed = true;

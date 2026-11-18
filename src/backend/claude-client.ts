@@ -150,6 +150,16 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     this.#pendingServerRequests.clear();
   }
 
+  async closeThread(threadId: string): Promise<void> {
+    const runtime = this.#threads.get(threadId);
+    if (!runtime) return;
+    runtime.closed = true;
+    runtime.input.close();
+    runtime.query.close();
+    this.#threads.delete(threadId);
+    await runtime.consume.catch(() => undefined);
+  }
+
   async request<T>(method: string, params: unknown): Promise<T> {
     if (!this.#running) throw new Error("Claude Agent SDK is not running.");
 

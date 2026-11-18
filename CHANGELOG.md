@@ -13,6 +13,7 @@ Found by testing 0.1.1 on a real computer.
 - A bot on OpenCode answers its first message again: Markas no longer picks OpenCode's effort variant, whose "high" for Claude Opus 5 the model refused.
 - Opening a bot whose engine is missing no longer keeps Markas looking for that engine without end.
 - Stopping Markas waits for the end of a turn to be saved.
+- Deleting a bot on Claude Code or OpenCode ends that bot's engine session, instead of leaving it running until Markas stops.
 
 ## 0.1.1 - 2026-11-18
 

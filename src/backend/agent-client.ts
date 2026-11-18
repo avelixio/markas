@@ -17,6 +17,11 @@ export interface AgentClient {
    * Null when the thread has no live session to ask.
    */
   contextBreakdown?(threadId: string): Promise<Omit<BotContextBreakdown, "botId"> | null>;
+  /**
+   * Ends a thread's own session for good, for an engine that runs one per thread.
+   * Used when its bot is deleted, so nothing keeps running for a bot that is gone.
+   */
+  closeThread?(threadId: string): Promise<void>;
   on(event: "notification", listener: (notification: AppServerNotification) => void): this;
   on(event: "request", listener: (request: AppServerRequest) => void): this;
   on(event: "diagnostic", listener: (message: string) => void): this;

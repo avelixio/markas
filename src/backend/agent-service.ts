@@ -596,6 +596,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#drainingBots.delete(botId);
     this.#scheduledDrains.delete(botId);
     if (bot.threadId) {
+      // The engine's own session for this chat ends too; the chat itself stays on disk.
+      await this.#clientForBot(bot)
+        ?.closeThread?.(bot.threadId)
+        .catch((error) => this.#emitError("thread_close_failed", error, botId));
       this.#keys?.forgetChat(bot.threadId);
       this.#threadToBot.delete(bot.threadId);
       this.#loadedThreads.delete(bot.threadId);

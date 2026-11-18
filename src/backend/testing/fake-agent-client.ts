@@ -52,6 +52,13 @@ export class FakeAgentClient extends EventEmitter implements AgentClient {
     this.#running = false;
   }
 
+  /** The threads whose session was ended for good, in order. */
+  readonly closedThreads: string[] = [];
+
+  async closeThread(threadId: string): Promise<void> {
+    this.closedThreads.push(threadId);
+  }
+
   notify(): void {}
 
   respond(id: RequestId, result: unknown): void {

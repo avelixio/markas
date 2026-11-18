@@ -350,6 +350,20 @@ describe("a turn", () => {
     expect(h.agents[1].asked.some((entry) => entry.method === "session/load")).toBe(true);
   });
 
+  it("ends a conversation's process for good when its bot is deleted", async () => {
+    const h = harness();
+    const threadId = await h.start();
+    await h.turn(threadId);
+
+    await client.closeThread(threadId);
+
+    expect(h.agents[0].stopped).toBe(true);
+    await expect(
+      client.request("turn/start", { threadId, input: [{ type: "text", text: "Again" }] }),
+    ).rejects.toThrow();
+    expect(h.agents).toHaveLength(1);
+  });
+
   it("starts the process again under the new rules when the bot's level changes", async () => {
     const h = harness();
     const threadId = await h.start("ask");
