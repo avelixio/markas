@@ -1,0 +1,59 @@
+name: Install check
+
+# Installs a published release the way people do, on real macOS and Linux machines:
+# the one-line install script, and Homebrew through this repository's own tap.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release to install, without the v (for example 0.1.0)"
+        required: true
+        default: "0.1.0"
+
+permissions:
+  contents: read
+
+jobs:
+  script:
+    name: install.sh on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install with the script
+        env:
+          MARKAS_VERSION: ${{ inputs.version }}
+        run: sh install.sh
+      - name: Start it and load its page
+        run: |
+          "$HOME/.local/bin/markas" --version | grep -x "${{ inputs.version }}"
+          export MARKAS_HOME="$RUNNER_TEMP/markas-data" MARKAS_PORT=47395
+          "$HOME/.local/bin/markas" serve > "$RUNNER_TEMP/serve.log" 2>&1 &
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:47395/ && break; sleep 1; done
+          curl -fs http://127.0.0.1:47395/ | grep -q "<title>Markas</title>"
+          cat "$RUNNER_TEMP/serve.log"
+
+  homebrew:
+    name: Homebrew on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install through this repository's tap
+        run: |
+          brew tap avelixio/markas https://github.com/avelixio/markas
+          brew install avelixio/markas/markas
+          brew test avelixio/markas/markas
+      - name: Start it and load its page
+        run: |
+          markas --version | grep -x "${{ inputs.version }}"
+          export MARKAS_HOME="$RUNNER_TEMP/markas-data" MARKAS_PORT=47396
+          markas serve > "$RUNNER_TEMP/serve.log" 2>&1 &
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:47396/ && break; sleep 1; done
+          curl -fs http://127.0.0.1:47396/ | grep -q "<title>Markas</title>"
+          cat "$RUNNER_TEMP/serve.log"

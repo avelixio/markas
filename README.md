@@ -65,6 +65,31 @@ The interface designs live in [`design/`](design).
 
 ## Get it
 
+### In one line, on macOS and Linux
+
+Markas also comes as a command that opens in your browser.
+Install it with the script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/avelixio/markas/main/install.sh | sh
+```
+
+Or with Homebrew:
+
+```bash
+brew tap avelixio/markas https://github.com/avelixio/markas
+```
+
+```bash
+brew install avelixio/markas/markas
+```
+
+Then run `markas`.
+The script puts Markas in `~/.markas/app` and a `markas` command in `~/.local/bin`, with no administrator password, after checking the download against the release's SHA-256 list.
+Connect Claude Code, Codex or OpenCode from the Switchboard in Markas.
+
+### The desktop app
+
 1. Download the file for your system from [Releases](../../releases).
 
 | System | File |
