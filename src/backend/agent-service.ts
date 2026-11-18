@@ -662,6 +662,20 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     );
   }
 
+  /**
+   * True when the engine was looked for and is not usable as it is: not installed, signed out,
+   * too old, or failing. Reading a chat does not look again; the Switchboard and setup do.
+   */
+  #knownMissing(provider: AgentProvider): boolean {
+    const state = this.#status.providers?.find((status) => status.id === provider)?.state;
+    return (
+      state === "not-installed" ||
+      state === "sign-in-required" ||
+      state === "outdated" ||
+      state === "error"
+    );
+  }
+
   /** One engine's models, and whether the engine listed them itself. */
   modelsFor(provider: AgentProvider): { models: AgentModelOption[]; listed: boolean } {
     return {
@@ -717,7 +731,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (cached?.activeTurnId) return structuredClone(cached);
     const revisionAtStart = cached?.revision ?? 0;
 
-    if (!this.#clientForBot(bot) && this.#initialized) {
+    if (!this.#clientForBot(bot) && this.#initialized && !this.#knownMissing(providerForBot(bot))) {
       // An engine that cannot start must not hide the conversation: what Markas holds of it
       // is shown, and the chat says why the bot cannot answer.
       await this.ensureProvider(providerForBot(bot)).catch(() => undefined);

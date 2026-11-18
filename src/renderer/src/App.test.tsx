@@ -478,6 +478,25 @@ describe("Markas connected desktop shell", () => {
 
     expect(await screen.findByText("Restored after Codex became ready")).toBeInTheDocument();
     expect(window.markas.agent.readConversation).toHaveBeenCalledTimes(2);
+
+    // A status change that leaves the phase as it is does not read the chat again: reading a
+    // chat can look for the bot's engine, which reports status, and that made a loop.
+    for (const state of ["checking", "not-installed", "checking"] as const) {
+      emitAgentEvent?.({
+        type: "status",
+        status: {
+          phase: "ready",
+          cliVersion: "0.144.1",
+          auth: { kind: "chatgpt", email: "user@example.com" },
+          providers: [{ id: "claude", state, version: null, message: null }],
+          capabilities: { chat: "ready", browser: "ready", computerUse: "ready" },
+          message: null,
+          fullAccess: true,
+        },
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(window.markas.agent.readConversation).toHaveBeenCalledTimes(2);
   });
 
   it("filters and switches backend bots", async () => {

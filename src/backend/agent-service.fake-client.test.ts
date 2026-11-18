@@ -134,6 +134,38 @@ describe("AgentService with an injected client", () => {
     expect(service.getStatus().phase).toBe("ready");
   });
 
+  it("does not look for a missing engine again each time its bot's chat is read", async () => {
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    await store.initialize();
+    await mailbox.initialize();
+    const looked: string[] = [];
+    const factory = fakeClientFactory({ claude: new FakeAgentClient({ provider: "claude" }) });
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      async (provider, timeout) => {
+        looked.push(provider);
+        return factory(provider, timeout);
+      },
+    );
+    await service.initialize();
+    await store.getOrCreate("chief");
+    await store.setThreadId("chief", "thread-codex");
+    const before = looked.filter((provider) => provider === "codex").length;
+
+    for (let read = 0; read < 5; read += 1) await service.readConversation("chief");
+
+    expect(looked.filter((provider) => provider === "codex").length).toBe(before);
+    // The Switchboard and setup still look again when asked.
+    await service.checkProvider("codex");
+    expect(looked.filter((provider) => provider === "codex").length).toBe(before + 1);
+  });
+
   it("gives a new bot an engine that is ready when the preferred one is not installed", async () => {
     const store = new BotStore(join(root, "data"), join(root, "data"));
     const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);

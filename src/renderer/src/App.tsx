@@ -205,9 +205,12 @@ export function App() {
       .catch(() => undefined);
   });
 
+  // Only a change of phase (Markas becoming ready) reloads the open chat. Every status event
+  // reloading it made a loop: reading a chat can look for the bot's engine, which reports status.
+  const phase = createMemo(() => agentStatus().phase);
   createEffect(() => {
     const botId = activeBotId();
-    agentStatus().phase;
+    phase();
     if (!botId) return;
     void Promise.all([
       window.markas.agent.readConversation(botId),
