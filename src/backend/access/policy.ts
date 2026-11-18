@@ -289,7 +289,9 @@ export function covers(grants: readonly Grant[], verdict: Verdict): boolean {
     if (wanted.type !== "folder") return false;
     // Permission to change a folder includes reading it.
     const kindCovers = grant.kind === wanted.kind || grant.kind === "write";
-    return kindCovers && inside(wanted.root, grant.root);
+    // The request's folder has its links followed, so the grant's must be too: on macOS the
+    // temporary folders under /var are really under /private/var.
+    return kindCovers && inside(wanted.root, real(grant.root));
   });
 }
 

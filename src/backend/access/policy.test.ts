@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -20,7 +20,8 @@ let shared: string;
 let outside: string;
 
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), "markas-access-test-"));
+  // With its links followed, as the policy reports paths: on macOS /var is really /private/var.
+  root = await realpath(await mkdtemp(join(tmpdir(), "markas-access-test-")));
   home = join(root, "data", "bots", "atlas");
   shared = join(root, "data", "shared");
   outside = join(root, "projects");
@@ -151,6 +152,19 @@ describe("access policy", () => {
         decide("ask", "Read", { file_path: join(home, "shortcut", "secret.txt") }).decision,
       ).toBe("ask");
       expect(decide("ask", "Write", { file_path: "shortcut/new.txt" }).decision).toBe("ask");
+    },
+  );
+
+  it.runIf(process.platform !== "win32")(
+    "lets a yes for a folder cover it when the folder was named through a link",
+    async () => {
+      await mkdir(join(outside, "a"), { recursive: true });
+      await symlink(join(outside, "a"), join(root, "link-to-a"));
+      const read = decide("ask", "Read", { file_path: join(outside, "a", "b.txt") });
+      const grants = [
+        { type: "folder" as const, kind: "read" as const, root: join(root, "link-to-a") },
+      ];
+      expect(covers(grants, read)).toBe(true);
     },
   );
 

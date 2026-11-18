@@ -302,7 +302,8 @@ describe.sequential("AgentService", () => {
     await service.stop();
 
     expect(["failed", "interrupted"]).toContain(service.listQueue("chief").deliveries[0]?.status);
-  });
+    // The engine's start alone takes two seconds, which leaves too little room on a slow runner.
+  }, 15_000);
 
   it("keeps draining after a turn that ended before its start was confirmed", async () => {
     // The turn ends 20 ms in; the engine confirms that it started only after 150 ms.

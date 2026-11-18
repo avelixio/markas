@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -24,7 +24,8 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "markas-opencode-"));
   home = join(root, "bots", "atlas");
   await mkdir(home, { recursive: true });
-  elsewhere = await mkdtemp(join(tmpdir(), "markas-elsewhere-"));
+  // With its links followed, as the policy reports paths: on macOS /var is really /private/var.
+  elsewhere = await realpath(await mkdtemp(join(tmpdir(), "markas-elsewhere-")));
 });
 
 afterEach(async () => {

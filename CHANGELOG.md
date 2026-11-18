@@ -17,6 +17,7 @@ Found by testing 0.1.1 on a real computer.
 - A Keyring key can have any name, such as "web example" or "app.example.com". A new key starts with its site as its name, and capitals or spaces no longer make a name refused.
 - On Linux, Markas finds Claude Code, Codex and OpenCode anywhere on PATH, also on a computer without zsh, instead of only in a few known folders.
 - Looking for the engines no longer stops Markas when it runs in the background of a terminal.
+- A yes for the chat on a folder covers it also when the folder was named through a link, such as /var on macOS, which is really /private/var.
 - The install script's advice for adding Markas to PATH names the person's own shell, instead of always zsh.
 
 ## 0.1.1 - 2026-11-18
