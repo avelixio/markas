@@ -107,6 +107,33 @@ describe("AgentService with an injected client", () => {
     await second.created.stop();
   });
 
+  it("opens a bot's chat even when its engine is not on this computer, and says how that engine stands", async () => {
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    await store.initialize();
+    await mailbox.initialize();
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      fakeClientFactory({ claude: new FakeAgentClient({ provider: "claude" }) }),
+    );
+    await service.initialize();
+    // A bot on Codex, which this computer does not have.
+    await store.getOrCreate("chief");
+    await store.setThreadId("chief", "thread-codex");
+
+    await expect(service.readConversation("chief")).resolves.toMatchObject({ botId: "chief" });
+    const codex = () => service?.getStatus().providers?.find((entry) => entry.id === "codex");
+    // Settled, not left looking as if it were still being checked.
+    expect(codex()?.state).toBe("error");
+    expect(codex()?.message).toContain("not installed in this test");
+    expect(service.getStatus().phase).toBe("ready");
+  });
+
   it("gives a new bot an engine that is ready when the preferred one is not installed", async () => {
     const store = new BotStore(join(root, "data"), join(root, "data"));
     const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);

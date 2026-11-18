@@ -718,7 +718,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     const revisionAtStart = cached?.revision ?? 0;
 
     if (!this.#clientForBot(bot) && this.#initialized) {
-      await this.ensureProvider(providerForBot(bot));
+      // An engine that cannot start must not hide the conversation: what Markas holds of it
+      // is shown, and the chat says why the bot cannot answer.
+      await this.ensureProvider(providerForBot(bot)).catch(() => undefined);
     }
     const client = this.#clientForBot(bot);
     if (!bot.threadId || !client || this.#status.phase !== "ready") {
@@ -973,13 +975,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
             providers: live(),
             capabilities: { ...this.#status.capabilities, chat: "unavailable" },
             message:
-              phase === "starting"
-                ? "Starting local agent CLIâ€¦"
-                : "Restarting local agent CLIâ€¦",
+              phase === "starting" ? "Starting local agent CLI…" : "Restarting local agent CLI…",
           },
     );
 
     const failures: string[] = [];
+    let started = 0;
     for (const provider of requestedProviders) {
       if (this.#clients.has(provider)) continue;
       let client: AgentClient | null = null;
@@ -1014,6 +1015,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         this.#cli.set(provider, cli);
         this.#clients.set(provider, client);
         this.#accounts.set(provider, account.account);
+        started += 1;
         setProviderStatus(providerStatuses, provider, {
           state: "available",
           version: cli.version,
@@ -1038,6 +1040,12 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         capabilities: { ...this.#status.capabilities, chat: "unavailable" },
         message: failures.join(" "),
       });
+      return;
+    }
+    // Another look at an engine that is still missing changes nothing else, so it is answered
+    // at once instead of waiting on every engine's model list.
+    if (hadClients && started === 0) {
+      this.#setStatus({ providers: live() });
       return;
     }
 
@@ -1122,7 +1130,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
             phase: "restarting",
             providers,
             capabilities: { ...this.#status.capabilities, chat: "unavailable" },
-            message: `${providerLabel(client.provider)} stopped. Retrying (${this.#restartAttempts}/3)â€¦`,
+            message: `${providerLabel(client.provider)} stopped. Retrying (${this.#restartAttempts}/3)…`,
           },
     );
     this.#restartTimer = setTimeout(() => {
@@ -2890,7 +2898,7 @@ function isDynamicToolCall(value: unknown): value is DynamicToolCallParams {
 
 function cleanModelName(value: string | undefined, fallback: string): string {
   if (!value) return fallback;
-  return value.replace(/^GPT-5\.6[\s:â€“â€”-]*/i, "").trim() || fallback;
+  return value.replace(/^GPT-5\.6[\s:\u2013\u2014-]*/i, "").trim() || fallback;
 }
 
 function providerForModel(model: BotSummary["model"]): AgentProvider {

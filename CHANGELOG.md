@@ -2,6 +2,15 @@
 
 What changed in Markas, newest first.
 
+## 0.1.2 - 2026-11-18
+
+Found by testing 0.1.1 on a real computer.
+
+- A bot whose engine is not on this computer opens its chat again, instead of showing an error.
+- An engine that is not installed shows as such right away, instead of looking as if it were always being checked.
+- The startup message reads "Starting local agent CLI…" again; 0.1.1 showed it garbled.
+- A Codex model name is shortened again as it was meant to be.
+
 ## 0.1.1 - 2026-11-18
 
 - Markas can be installed in one line on macOS and Linux, with an install script that checks the download against the release's SHA-256 list, or with Homebrew through this repository's tap.
