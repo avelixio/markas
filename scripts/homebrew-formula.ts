@@ -16,7 +16,9 @@ const TARGETS = { "macos-arm64": "", "macos-x64": "", "linux-x64": "" };
 
 const [version, sumsFolder] = process.argv.slice(2);
 if (!version || !/^\d+\.\d+\.\d+$/.test(version) || !sumsFolder) {
-  throw new Error("Usage: bun scripts/homebrew-formula.ts <version> <folder with SHA256SUMS-*.txt>");
+  throw new Error(
+    "Usage: bun scripts/homebrew-formula.ts <version> <folder with SHA256SUMS-*.txt>",
+  );
 }
 
 const sums: Record<string, string> = { ...TARGETS };

@@ -14,6 +14,7 @@ import {
   type ThreadResponse,
   type TurnResponse,
 } from "../protocol";
+import { MARKAS_VERSION } from "../version";
 import {
   type DispatchContext,
   dispatchInstructions,
@@ -237,7 +238,7 @@ export class DispatchService {
     try {
       client.start();
       await client.request("initialize", {
-        clientInfo: { name: "markas", title: "Markas", version: "0.1.0" },
+        clientInfo: { name: "markas", title: "Markas", version: MARKAS_VERSION },
         capabilities: { experimentalApi: true },
       });
       client.notify("initialized");

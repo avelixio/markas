@@ -50,6 +50,7 @@ import {
   TEAMMATE_PURPOSE_MAX,
   TEAMMATE_ROLE_MAX,
 } from "./teammate-tool";
+import { MARKAS_VERSION } from "./version";
 
 const execFileAsync = promisify(execFile);
 
@@ -293,7 +294,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
         additionalDirectories: config.additionalDirectories,
         canUseTool,
         mcpServers,
-        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "markas/0.1.0" },
+        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: `markas/${MARKAS_VERSION}` },
       },
     });
     const runtime: ThreadRuntime = {
@@ -584,7 +585,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
     return {
       markas_browser: createSdkMcpServer({
         name: "markas_browser",
-        version: "0.1.0",
+        version: MARKAS_VERSION,
         tools: [
           tool(
             "open",
@@ -634,7 +635,7 @@ export class ClaudeAgentClient extends EventEmitter<ClientEvents> {
       }),
       markas: createSdkMcpServer({
         name: "markas",
-        version: "0.1.0",
+        version: MARKAS_VERSION,
         tools: [
           tool("list_agents", "List Markas agents that can receive local messages.", {}, (args) =>
             call("markas", "list_agents", args),

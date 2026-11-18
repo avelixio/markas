@@ -102,6 +102,9 @@ describe("AgentService with an injected client", () => {
     );
     const shown = JSON.stringify(firstWithNew?.snapshot.messages ?? []);
     expect(shown).toContain("The first answer.");
+    // The turn ends and saves before the folder is removed, or Windows refuses the save.
+    await waitFor(() => second.events.some((event) => event.type === "turn-completed"));
+    await second.created.stop();
   });
 
   it("gives a new bot an engine that is ready when the preferred one is not installed", async () => {

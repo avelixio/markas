@@ -2,7 +2,7 @@
 
 What changed in Markas, newest first.
 
-## Unreleased
+## 0.1.1 - 2026-11-18
 
 - Markas can be installed in one line on macOS and Linux, with an install script that checks the download against the release's SHA-256 list, or with Homebrew through this repository's tap.
 - The Switchboard shows what Markas found on this computer, marked Detected, with one Connect for each: the engines, model servers such as LM Studio and Ollama, and every model provider OpenCode can use. Signing in happens in the browser, without a terminal.

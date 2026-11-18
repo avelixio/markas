@@ -38,6 +38,7 @@ import {
   type RpcError,
   type ThreadResponse,
 } from "./protocol";
+import { MARKAS_VERSION } from "./version";
 
 const START_TIMEOUT_MS = 60_000;
 const LIST_TIMEOUT_MS = 30_000;
@@ -385,7 +386,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
             fs: { readTextFile: false, writeTextFile: false },
             terminal: false,
           },
-          clientInfo: { name: "markas", title: "Markas", version: "0.1.0" },
+          clientInfo: { name: "markas", title: "Markas", version: MARKAS_VERSION },
         },
         START_TIMEOUT_MS,
       );
@@ -911,7 +912,7 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
             fs: { readTextFile: false, writeTextFile: false },
             terminal: false,
           },
-          clientInfo: { name: "markas", title: "Markas", version: "0.1.0" },
+          clientInfo: { name: "markas", title: "Markas", version: MARKAS_VERSION },
         },
         START_TIMEOUT_MS,
       );

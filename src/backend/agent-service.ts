@@ -98,6 +98,7 @@ import {
   TEAMMATE_PURPOSE_MAX,
   TEAMMATE_ROLE_MAX,
 } from "./teammate-tool";
+import { MARKAS_VERSION } from "./version";
 
 interface AgentServiceEvents {
   event: [event: AgentEvent];
@@ -988,7 +989,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
         this.#bindClient(client);
         client.start();
         await client.request("initialize", {
-          clientInfo: { name: "markas", title: "Markas", version: "0.1.0" },
+          clientInfo: { name: "markas", title: "Markas", version: MARKAS_VERSION },
           capabilities: { experimentalApi: true, mcpServerOpenaiFormElicitation: true },
         });
         client.notify("initialized");

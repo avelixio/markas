@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { isRecord } from "../protocol";
+import { MARKAS_VERSION } from "../version";
 
 /** One tool Markas offers a bot, as the engines are told about it. */
 export interface OfferedTool {
@@ -158,7 +159,7 @@ export class LocalToolServer {
         return rpcResult(id, {
           protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
           capabilities: { tools: {} },
-          serverInfo: { name: namespace, version: "0.1.0" },
+          serverInfo: { name: namespace, version: MARKAS_VERSION },
         });
       }
       case "ping":
