@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -122,6 +122,48 @@ describe("the trash for deleted bots", () => {
     expect(agents.listDeletedBots()).toEqual([]);
     expect(mailbox.listQueue(atlas.id).deliveries).toEqual([]);
     await expect(agents.restoreBot(atlas.id)).rejects.toThrow("not among the deleted bots");
+  });
+
+  it("takes away the bot's empty folder when the bot is removed for good", async () => {
+    const { agents, atlas } = await harness();
+    await agents.deleteBot(atlas.id);
+    expect((await stat(atlas.workspacePath)).isDirectory()).toBe(true);
+
+    await agents.purgeBot(atlas.id);
+
+    await expect(stat(atlas.workspacePath)).rejects.toThrow();
+  });
+
+  it("keeps the bot's folder when it still holds files", async () => {
+    const { agents, atlas } = await harness();
+    await writeFile(join(atlas.workspacePath, "notes.md"), "Keep me.");
+    await agents.deleteBot(atlas.id);
+
+    await agents.purgeBot(atlas.id);
+
+    expect(await readFile(join(atlas.workspacePath, "notes.md"), "utf8")).toBe("Keep me.");
+  });
+
+  it("keeps a folder the person chose, even an empty one", async () => {
+    const data = join(root, "data");
+    const store = new BotStore(data, data);
+    await store.initialize();
+    const chosen = join(root, "chosen");
+    await mkdir(chosen);
+    const bot = await store.createBot({
+      name: "Pico",
+      role: "",
+      description: "",
+      model: "claude-opus-5",
+      reasoningEffort: "high",
+      access: "ask",
+      workspacePath: chosen,
+    });
+    await store.trashBot(bot.id);
+
+    await store.purgeTrashed(bot.id);
+
+    expect((await stat(chosen)).isDirectory()).toBe(true);
   });
 
   it("removes for good only a bot that was deleted first", async () => {

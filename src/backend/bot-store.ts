@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rmdir, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { type AccessLevel, DEFAULT_ACCESS, isAccessLevel } from "../shared/access";
 import { BOT_DRAFT_LIMITS } from "../shared/bot-draft";
@@ -207,7 +207,18 @@ export class BotStore {
     const previous = { bots: this.#state.bots, trash: this.#state.trash };
     this.#state.trash = this.#state.trash.filter((candidate) => candidate !== entry);
     await this.#persistOrUndo(previous);
+    await this.#removeEmptyDefaultFolder(entry.bot);
     return { ...entry.bot };
+  }
+
+  /**
+   * Takes away the folder Markas made for a bot, once the bot is gone for good.
+   * Only an empty folder in the default place goes: a folder the person chose, or one that
+   * still holds files, is theirs and stays.
+   */
+  async #removeEmptyDefaultFolder(bot: StoredBot): Promise<void> {
+    if (bot.workspacePath !== join(this.#botsRoot, bot.id)) return;
+    await rmdir(bot.workspacePath).catch(() => undefined);
   }
 
   async getOrCreate(id: string, name?: string, role?: string): Promise<BotSummary> {
