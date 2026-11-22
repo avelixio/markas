@@ -68,9 +68,15 @@ export async function exportMarkasData(
         `Compress-Archive -LiteralPath '${powerShellLiteral(exportRoot)}' -DestinationPath '${powerShellLiteral(archiveCandidate)}' -Force`,
       ]);
     } else {
+      // Without the --no flags, macOS adds "._" files holding each file's extended attributes,
+      // which show up as clutter when the backup is opened on another computer.
       await execFileAsync("/usr/bin/ditto", [
         "-c",
         "-k",
+        "--norsrc",
+        "--noextattr",
+        "--noqtn",
+        "--noacl",
         "--keepParent",
         exportRoot,
         archiveCandidate,
