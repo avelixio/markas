@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AgentEvent } from "../shared/ipc";
+import type { AgentClientFactory } from "./agent-service";
 import { AgentService } from "./agent-service";
 import { BotStore } from "./bot-store";
 import { UnavailableBrowserService } from "./browser-host";
@@ -25,6 +26,148 @@ afterEach(async () => {
 });
 
 describe("AgentService with an injected client", () => {
+  it("tells the engine to drop what was allowed for the chat after the level changes", async () => {
+    const client = new FakeAgentClient({ provider: "claude", autoReply: "Done." });
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      fakeClientFactory({ claude: client }),
+    );
+    let ended = 0;
+    service.on("event", (event: AgentEvent) => {
+      if (event.type === "turn-completed") ended += 1;
+    });
+    await service.initialize();
+    const bot = await service.createBot();
+    const turnStarts = () =>
+      client.requests
+        .filter((request) => request.method === "turn/start")
+        .map((request) => (request.params as { forgetChatGrants?: boolean }).forgetChatGrants);
+
+    await service.sendMessage({ botId: bot.id, text: "First" });
+    await waitFor(() => ended === 1);
+    // Up and back down between two turns.
+    await service.updateBot({ botId: bot.id, access: "full" });
+    await service.updateBot({ botId: bot.id, access: "ask" });
+    await service.sendMessage({ botId: bot.id, text: "Second" });
+    await waitFor(() => ended === 2);
+    await service.sendMessage({ botId: bot.id, text: "Third" });
+    await waitFor(() => ended === 3);
+
+    expect(turnStarts()).toEqual([undefined, true, undefined]);
+  });
+
+  it("starts each engine once when it is asked about while it is still starting", async () => {
+    // Setup asks how the engines are while the host is still starting them.
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const started: FakeAgentClient[] = [];
+    const factory: AgentClientFactory = async (provider) => {
+      if (provider !== "claude") throw new Error(`${provider} is not installed in this test.`);
+      const client = new FakeAgentClient({ provider: "claude" });
+      started.push(client);
+      await gate;
+      return { client, cli: { executable: "fake-claude", version: "0.0.0-fake" } };
+    };
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      factory,
+    );
+
+    const starting = service.initialize();
+    await waitFor(() => started.length > 0);
+    const asked = service.checkProvider("claude");
+    release();
+    await starting;
+
+    expect((await asked).state).toBe("available");
+    expect(started).toHaveLength(1);
+    expect((await service.checkProvider("claude")).state).toBe("available");
+  });
+
+  it("reports an engine as ready while another engine is still starting", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let openCodeAsked = false;
+    const factory: AgentClientFactory = async (provider) => {
+      if (provider === "claude") {
+        const client = new FakeAgentClient({ provider: "claude" });
+        return { client, cli: { executable: "fake-claude", version: "0.0.0-fake" } };
+      }
+      if (provider === "opencode") {
+        openCodeAsked = true;
+        await gate;
+      }
+      throw new Error(`${provider} is not installed in this test.`);
+    };
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      factory,
+    );
+
+    const starting = service.initialize();
+    await waitFor(() => openCodeAsked);
+    const asked = service.checkProvider("claude");
+    release();
+    await starting;
+
+    expect((await asked).state).toBe("available");
+  });
+
+  it("starts each engine once when it is asked about before the host starts the engines", async () => {
+    // The host answers requests before it starts the engines, so setup can ask first.
+    const started: FakeAgentClient[] = [];
+    const factory: AgentClientFactory = async (provider) => {
+      if (provider !== "claude") throw new Error(`${provider} is not installed in this test.`);
+      const client = new FakeAgentClient({ provider: "claude" });
+      started.push(client);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return { client, cli: { executable: "fake-claude", version: "0.0.0-fake" } };
+    };
+    const store = new BotStore(join(root, "data"), join(root, "data"));
+    const mailbox = new MailboxStore(join(root, "data"), store.sharedRoot);
+    service = new AgentService(
+      store,
+      mailbox,
+      new UnavailableBrowserService(),
+      null,
+      5_000,
+      "claude",
+      factory,
+    );
+
+    const asked = service.checkProvider("claude");
+    await service.initialize();
+
+    expect((await asked).state).toBe("available");
+    expect(started).toHaveLength(1);
+    expect(service.getStatus().phase).toBe("ready");
+  });
+
   it("runs a turn end to end without any engine executable", async () => {
     const client = new FakeAgentClient({ autoReply: "Done from the fake engine." });
     const store = new BotStore(join(root, "data"), join(root, "data"));

@@ -478,6 +478,9 @@ export class OpenCodeAgentClient extends EventEmitter<ClientEvents> {
     } else {
       runtime.config.access = access;
     }
+    // The person changed the bot's level since the last turn: a yes "for this chat" does not
+    // outlive that, even when the level is back where it was.
+    if (isRecord(params) && params.forgetChatGrants === true) runtime.grants = [];
     // Set fresh for every turn, so a round's permissions never carry over into a chat turn.
     runtime.standing = readStanding(params);
     runtime.standingReported.clear();

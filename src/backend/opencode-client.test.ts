@@ -492,6 +492,45 @@ describe("permission", () => {
     expect(h.requests).toHaveLength(1);
   });
 
+  it("drops a yes for the chat on a folder when Markas says the level was changed since", async () => {
+    const h = harness();
+    const threadId = await h.start("ask");
+    const first = await h.turn(threadId);
+    running(first.agent, threadId, "read", { filePath: join(elsewhere, "a.md") });
+    const asked = first.agent.askPermission(threadId, "c1", "read");
+    await until(() => h.requests.length === 1);
+    client.respond(h.requests[0].id, { decision: "chat" });
+    await asked;
+    first.finish();
+    await until(() => h.turnEnd() !== undefined);
+
+    const { agent } = await h.turn(threadId, "ask", { forgetChatGrants: true });
+    running(agent, threadId, "read", { filePath: join(elsewhere, "b.md") });
+    const again = agent.askPermission(threadId, "c1", "read");
+    await until(() => h.requests.length === 2);
+    expect(h.requests[1].params).toMatchObject({ kind: "read" });
+    client.respond(h.requests[1].id, { decision: "deny" });
+    await again;
+  });
+
+  it("keeps a yes for the chat on a folder across turns when nothing changed", async () => {
+    const h = harness();
+    const threadId = await h.start("ask");
+    const first = await h.turn(threadId);
+    running(first.agent, threadId, "read", { filePath: join(elsewhere, "a.md") });
+    const asked = first.agent.askPermission(threadId, "c1", "read");
+    await until(() => h.requests.length === 1);
+    client.respond(h.requests[0].id, { decision: "chat" });
+    await asked;
+    first.finish();
+    await until(() => h.turnEnd() !== undefined);
+
+    const { agent } = await h.turn(threadId, "ask");
+    running(agent, threadId, "read", { filePath: join(elsewhere, "b.md") });
+    expect(await agent.askPermission(threadId, "c1", "read")).toBe("once");
+    expect(h.requests).toHaveLength(1);
+  });
+
   it("asks about a call it knows nothing about instead of letting it through", async () => {
     const h = harness();
     const threadId = await h.start("ask");

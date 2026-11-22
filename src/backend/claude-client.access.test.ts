@@ -163,6 +163,46 @@ describe("ClaudeAgentClient access levels", () => {
     await waitFor(() => requests.length === 2);
   });
 
+  it("drops a yes for the chat when Markas says the level was changed since", async () => {
+    const { client, requests, start, use } = harness();
+    const threadId = await start("ask");
+    const projects = join(root, "..", "projects-elsewhere");
+    const first = use("Read", { file_path: join(projects, "a.txt") });
+    await waitFor(() => requests.length === 1);
+    client.respond(requests[0]?.id ?? "", { decision: "chat" });
+    expect(decisionOf(await first)).toBe("allow");
+
+    // Ask, then full, then ask again between two turns: the level looks unchanged here.
+    await client.request("turn/start", {
+      threadId,
+      input: [{ type: "text", text: "hello" }],
+      markasAccess: { level: "ask", protectedRoots: [root] },
+      forgetChatGrants: true,
+    });
+
+    void use("Read", { file_path: join(projects, "b.txt") });
+    await waitFor(() => requests.length === 2);
+  });
+
+  it("keeps a yes for the chat across turns when nothing changed", async () => {
+    const { client, requests, start, use } = harness();
+    const threadId = await start("ask");
+    const projects = join(root, "..", "projects-elsewhere");
+    const first = use("Read", { file_path: join(projects, "a.txt") });
+    await waitFor(() => requests.length === 1);
+    client.respond(requests[0]?.id ?? "", { decision: "chat" });
+    expect(decisionOf(await first)).toBe("allow");
+
+    await client.request("turn/start", {
+      threadId,
+      input: [{ type: "text", text: "hello" }],
+      markasAccess: { level: "ask", protectedRoots: [root] },
+    });
+
+    expect(decisionOf(await use("Read", { file_path: join(projects, "b.txt") }))).toBe("allow");
+    expect(requests).toHaveLength(1);
+  });
+
   it("refuses when the turn is stopped while the question is open", async () => {
     const { requests, start, use } = harness();
     await start("ask");

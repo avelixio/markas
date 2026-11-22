@@ -332,6 +332,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   readonly #siteGrants = new Map<string, Grant[]>();
   /** Bots whose commands the person allowed until the chat's session ends. */
   readonly #commandGrants = new Set<string>();
+  /**
+   * Bots whose engine still holds what was allowed "for this chat" under an access level the
+   * person has since changed. The engine is told to drop it at the bot's next turn.
+   */
+  readonly #staleChatGrants = new Set<string>();
   /** Engines whose own model list was read, as opposed to Markas's built-in one. */
   readonly #listedProviders = new Set<AgentProvider>();
   #botDefaults: { model: AgentModelId; reasoningEffort: AgentReasoningEffort } | null = null;
@@ -568,6 +573,9 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     if (previous?.access !== bot.access || (previous?.threadId && !bot.threadId)) {
       this.#siteGrants.delete(bot.id);
       this.#commandGrants.delete(bot.id);
+      // The engine keeps its own "for this chat" answers. Going to another level and back
+      // between two turns looks like no change to it, so it has to be told.
+      this.#staleChatGrants.add(bot.id);
     }
     if (previous?.threadId && !bot.threadId) {
       this.#threadToBot.delete(previous.threadId);
@@ -648,7 +656,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#stopping = false;
     await Promise.all([this.#store.initialize(), this.#mailbox.initialize()]);
     this.#initialized = true;
-    await this.#connect("starting", AGENT_PROVIDERS);
+    await this.#startProviders("starting", AGENT_PROVIDERS);
   }
 
   async setPreferredProvider(provider: AgentProvider): Promise<void> {
@@ -707,15 +715,11 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
   }
 
   async ensureProvider(provider: AgentProvider): Promise<void> {
-    if (this.#clients.has(provider)) return;
-    let start = this.#providerStarts.get(provider);
-    if (!start) {
-      start = this.#connect("starting", [provider]).finally(() => {
-        this.#providerStarts.delete(provider);
-      });
-      this.#providerStarts.set(provider, start);
-    }
-    await start;
+    // An engine that is still starting is not ready to report on, even when its client is up:
+    // its state is written when the whole start has finished.
+    const starting = this.#providerStarts.get(provider);
+    if (starting) await starting;
+    else if (!this.#clients.has(provider)) await this.#startProviders("starting", [provider]);
     if (this.#clients.has(provider)) return;
     const status = this.#status.providers?.find((candidate) => candidate.id === provider);
     throw new Error(status?.message ?? `${providerLabel(provider)} CLI is not ready or signed in.`);
@@ -966,6 +970,29 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     this.#commandGrants.clear();
   }
 
+  /**
+   * Starts engines, and lets anyone who asks about one of them while it starts wait for this
+   * start instead of starting a second copy of the same engine.
+   */
+  async #startProviders(
+    phase: "starting" | "restarting",
+    providers: readonly AgentProvider[],
+  ): Promise<void> {
+    const already = providers.flatMap((provider) => this.#providerStarts.get(provider) ?? []);
+    const fresh = providers.filter((provider) => !this.#providerStarts.has(provider));
+    if (fresh.length === 0) {
+      await Promise.all(already);
+      return;
+    }
+    const start = this.#connect(phase, fresh).finally(() => {
+      for (const provider of fresh) {
+        if (this.#providerStarts.get(provider) === start) this.#providerStarts.delete(provider);
+      }
+    });
+    for (const provider of fresh) this.#providerStarts.set(provider, start);
+    await Promise.all([start, ...already]);
+  }
+
   async #connect(
     phase: "starting" | "restarting",
     requestedProviders: readonly AgentProvider[],
@@ -1163,7 +1190,7 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
     );
     this.#restartTimer = setTimeout(() => {
       this.#restartTimer = null;
-      void this.#connect("restarting", [client.provider]);
+      void this.#startProviders("restarting", [client.provider]);
     }, delayMs);
   }
 
@@ -1863,8 +1890,10 @@ export class AgentService extends EventEmitter<AgentServiceEvents> {
           cwd: bot.workspacePath,
           runtimeWorkspaceRoots: [bot.workspacePath, this.#store.sharedRoot],
           ...this.#turnAccess(bot, level, standing),
+          ...(this.#staleChatGrants.has(bot.id) ? { forgetChatGrants: true } : {}),
         },
       );
+      this.#staleChatGrants.delete(bot.id);
       await this.#mailbox.markRunning(delivery.id, response.turn.id);
       // A quick turn can end while the line above is still saving. Marking it active then
       // would leave the bot looking busy for ever, with its queue never drained again.
