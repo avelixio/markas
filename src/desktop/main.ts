@@ -159,6 +159,19 @@ function createTray(): Tray {
   return created;
 }
 
+/**
+ * No menu bar on Windows and Linux. macOS keeps a small one, because there copy, paste, undo,
+ * select all and quit only work as keyboard shortcuts through the menu's roles.
+ */
+function applicationMenu(): Menu | null {
+  if (process.platform !== "darwin") return null;
+  return Menu.buildFromTemplate([
+    { role: "appMenu" },
+    { role: "editMenu" },
+    { role: "windowMenu" },
+  ]);
+}
+
 function stopOwnedHost(): void {
   if (!ownedHost) return;
   ownedHost.kill();
@@ -181,7 +194,7 @@ if (!app.requestSingleInstanceLock()) {
   void app
     .whenReady()
     .then(async () => {
-      Menu.setApplicationMenu(null);
+      Menu.setApplicationMenu(applicationMenu());
       const link = await connect();
       // The window only ever loads the host on this computer, so it never goes through a proxy:
       // a company proxy setting must not stand between Markas and itself.
